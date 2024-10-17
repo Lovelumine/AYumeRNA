@@ -48,7 +48,7 @@ springdoc:
   group-configs:
     - group: 'default'
       paths-to-match: '/**'
-      packages-to-scan: com.lovelumine.auth.controller
+      packages-to-scan: com.lovelumine
 # knife4j
 knife4j:
   enable: true
@@ -58,3 +58,10 @@ knife4j:
     enable-footer-custom: true
     footer-custom-content: Copyright © 2023-2024 Lovelumine
 debug: true
+
+# MinIO Configuration
+minio:
+  url: https://minio.lumoxuan.cn  # MinIO server URL
+  access-key: uv9Ey4hCgAeF9US8IvW7  # MinIO access key
+  secret-key: EJxNuc7hJId6cW969JXcMtd14xs7d9wTmC17Mn5W  # MinIO secret key
+  bucket-name: ayumerna  # default bucket name, can be customized

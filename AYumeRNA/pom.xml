@@ -159,6 +159,24 @@
             <version>${kotlin.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+            <version>8.2.1</version>
+        </dependency>
+        <!-- BioJava Core 模块 -->
+        <dependency>
+            <groupId>org.biojava</groupId>
+            <artifactId>biojava-core</artifactId>
+            <version>5.4.0</version>
+        </dependency>
+        <!-- BioJava Alignment 模块 -->
+        <dependency>
+            <groupId>org.biojava</groupId>
+            <artifactId>biojava-alignment</artifactId>
+            <version>5.4.0</version>
+        </dependency>
+
     </dependencies>
 
     <dependencyManagement>
