@@ -9,80 +9,87 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.MediaType
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
 import java.io.ByteArrayInputStream
-
-data class SequenceRequest(
-    val templateContent: String,
-    val testContent: String
-)
+import java.nio.file.Files
 
 @RestController
 @RequestMapping("/sequence")
 class SequenceController(
     @Autowired private val sequenceService: SequenceService,
-    @Autowired private val minioClient: MinioClient
+    @Autowired private val minioClient: MinioClient,
+    @Value("\${minio.url}") private val minioBaseUrl: String // 注入 MinIO 基础 URL
 ) {
 
     @Operation(
-        summary = "处理序列内容",
-        description = "用户可以直接上传模板序列和测试序列的内容，服务器将计算得分并返回结果文件的路径"
+        summary = "处理序列文件",
+        description = "用户可以上传模板序列文件和测试序列文件，服务器将计算得分并返回结果文件的路径"
     )
     @ApiResponses(value = [
         ApiResponse(responseCode = "200", description = "序列处理成功"),
         ApiResponse(responseCode = "400", description = "请求参数错误"),
         ApiResponse(responseCode = "500", description = "服务器内部错误")
     ])
-    @PostMapping("/process", consumes = [MediaType.APPLICATION_JSON_VALUE])
+    @PostMapping("/process")
     fun processSequence(
-        @RequestBody request: SequenceRequest
+        @RequestParam("templateFile") templateFile: MultipartFile,
+        @RequestParam("testFile") testFile: MultipartFile
     ): ResponseEntity<Map<String, Any>> {
         val user = SecurityContextHolder.getContext().authentication.principal as User
         val username = user.username
         val bucketName = "ayumerna"
 
+        // 保存上传的文件到临时目录
+        val tempDir = Files.createTempDirectory("sequence_upload")
+        val templateFilePath = tempDir.resolve(templateFile.originalFilename)
+        val testFilePath = tempDir.resolve(testFile.originalFilename)
+        templateFile.transferTo(templateFilePath)
+        testFile.transferTo(testFilePath)
+
         return try {
-            // 1. 读取模板序列内容
-            val templateSequences = sequenceService.parseSequences(request.templateContent)
+            // 调用服务层处理逻辑
+            val resultsCsvPath = sequenceService.processSequences(
+                templateFilePath.toString(),
+                testFilePath.toString(),
+                tempDir.toString()
+            )
 
-            // 2. 读取测试序列内容并添加 CCA
-            val testSequences = sequenceService.parseSequencesWithCCA(request.testContent)
-
-            // 3. 计算测试序列的得分
-            val results = sequenceService.calculateScores(templateSequences, testSequences)
-
-            // 4. 将结果保存为 CSV
-            val csvContent = buildString {
-                append("Test_Sequence,Score,Sequence\n")
-                for (result in results) {
-                    append("${result["Test_Sequence"]},${result["Score"]},${result["Sequence"]}\n")
-                }
-            }
-
-            // 5. 上传结果文件到 MinIO
+            // 上传结果文件到 MinIO
             val objectName = "$username/results.csv"
-            val inputStream = ByteArrayInputStream(csvContent.toByteArray())
+            val resultsBytes = Files.readAllBytes(resultsCsvPath)
+            val inputStream = ByteArrayInputStream(resultsBytes)
             minioClient.putObject(
                 PutObjectArgs.builder()
                     .bucket(bucketName)
                     .`object`(objectName)
-                    .stream(inputStream, csvContent.toByteArray().size.toLong(), -1)
+                    .stream(inputStream, resultsBytes.size.toLong(), -1)
                     .contentType("text/csv")
                     .build()
             )
 
+            // 构建完整的 URL
+            val fileUrl = "$minioBaseUrl/$bucketName/$objectName"
+
             ResponseEntity.ok(ResponseUtil.formatResponse(200, mapOf(
                 "message" to "序列处理成功，结果已上传",
-                "path" to objectName
+                "path" to fileUrl
             )))
         } catch (e: IllegalArgumentException) {
             ResponseEntity.status(400).body(ResponseUtil.formatResponse(400, e.message ?: "请求参数错误"))
         } catch (e: Exception) {
             e.printStackTrace()
             ResponseEntity.status(500).body(ResponseUtil.formatResponse(500, "序列处理失败：${e.message}"))
+        } finally {
+            // 清理临时文件
+            Files.deleteIfExists(templateFilePath)
+            Files.deleteIfExists(testFilePath)
+            Files.walk(tempDir)
+                .sorted(Comparator.reverseOrder())
+                .forEach(Files::deleteIfExists)
         }
     }
 }

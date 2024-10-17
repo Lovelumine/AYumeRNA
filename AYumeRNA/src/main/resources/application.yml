@@ -65,3 +65,4 @@ minio:
   access-key: uv9Ey4hCgAeF9US8IvW7  # MinIO access key
   secret-key: EJxNuc7hJId6cW969JXcMtd14xs7d9wTmC17Mn5W  # MinIO secret key
   bucket-name: ayumerna  # default bucket name, can be customized
+
