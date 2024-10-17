@@ -4,6 +4,8 @@ import com.lovelumine.auth.model.User
 import com.lovelumine.auth.repository.UserRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.redis.core.StringRedisTemplate
+import org.springframework.security.authentication.BadCredentialsException
+import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
 import java.util.*
@@ -27,10 +29,10 @@ class UserServiceImpl(
 
     override fun login(username: String, password: String): String {
         val user = userRepository.findByUsername(username)
-            ?: throw IllegalArgumentException("用户不存在")
+            ?: throw UsernameNotFoundException("用户不存在")
 
         if (!passwordEncoder.matches(password, user.password)) {
-            throw IllegalArgumentException("密码错误")
+            throw BadCredentialsException("密码错误")
         }
 
         val token = UUID.randomUUID().toString()
