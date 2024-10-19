@@ -5,7 +5,6 @@ import com.lovelumine.common.ResponseUtil
 import com.lovelumine.tREX.model.SequenceTask
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
@@ -14,8 +13,7 @@ import org.springframework.web.multipart.MultipartFile
 @RestController
 @RequestMapping("/sequence")
 class SequenceController(
-    @Autowired private val rabbitTemplate: RabbitTemplate,
-    @Autowired private val redisTemplate: StringRedisTemplate
+    @Autowired private val rabbitTemplate: RabbitTemplate
 ) {
 
     @PostMapping("/process")
@@ -33,15 +31,6 @@ class SequenceController(
         }
 
         val userId = user.id
-        val lockKey = "sequence_lock:$userId"
-
-        // 检查用户是否已有任务在执行
-        val isLocked = redisTemplate.hasKey(lockKey)
-        if (isLocked == true) {
-            return ResponseEntity.status(429).body(
-                ResponseUtil.formatResponse(429, "已有任务在执行，请稍后再试")
-            )
-        }
 
         // 创建任务对象
         val task = SequenceTask(
