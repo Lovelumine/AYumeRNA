@@ -34,39 +34,31 @@ class SequenceService(
 
     private val logger = LoggerFactory.getLogger(SequenceService::class.java)
 
-    // 新增的方法，接受 SequenceTask 参数
     fun processSequences(task: SequenceTask) {
         val userId = task.userId
-        val username = task.username
 
-        // 发送任务开始的通知
         messagingTemplate.convertAndSend("/topic/progress/$userId", "任务开始")
 
-        // 创建临时目录
         val tempDir = Files.createTempDirectory("sequence_upload_${userId}")
         val templateFilePath = tempDir.resolve("template.csv")
         val testFilePath = tempDir.resolve("test.fasta")
 
-        // 将文件数据写入临时文件
         Files.write(templateFilePath, task.templateFileData)
         Files.write(testFilePath, task.testFileData)
 
         try {
-            // 执行序列处理逻辑，并定期发送进度更新
-            messagingTemplate.convertAndSend("/topic/progress/$userId", "进度：10%")
+            messagingTemplate.convertAndSend("/topic/progress/$userId", "进度：10% - 读取模板序列文件中...")
             val resultsCsvPath = executeSequenceProcessing(
                 templateFilePath.toString(),
                 testFilePath.toString(),
                 tempDir.toString(),
                 userId
             )
-            messagingTemplate.convertAndSend("/topic/progress/$userId", "进度：90%")
+            messagingTemplate.convertAndSend("/topic/progress/$userId", "进度：90% - 序列比对完成，保存结果中...")
 
-            // 生成唯一的文件名，包含用户ID、时间戳和 "result"
             val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
             val objectName = "$userId-$timestamp-result.csv"
 
-            // 上传结果文件到 MinIO
             val resultsBytes = Files.readAllBytes(resultsCsvPath)
             val inputStream = ByteArrayInputStream(resultsBytes)
             minioClient.putObject(
@@ -78,17 +70,13 @@ class SequenceService(
                     .build()
             )
 
-            // 构建文件 URL
             val fileUrl = "$minioBaseUrl/$bucketName/$objectName"
-
-            // 发送任务完成通知和结果路径
             messagingTemplate.convertAndSend("/topic/progress/$userId", "任务完成，结果已上传：$fileUrl")
 
         } catch (e: Exception) {
             logger.error("任务执行失败：${e.message}", e)
             messagingTemplate.convertAndSend("/topic/progress/$userId", "任务失败：${e.message}")
         } finally {
-            // 清理临时文件
             Files.deleteIfExists(templateFilePath)
             Files.deleteIfExists(testFilePath)
             Files.walk(tempDir)
@@ -97,40 +85,138 @@ class SequenceService(
         }
     }
 
-    // 原有的处理逻辑，方法名修改为 executeSequenceProcessing
     private fun executeSequenceProcessing(
         templateFilePath: String,
         testFilePath: String,
         tempDirPath: String,
         userId: Long
     ): java.nio.file.Path {
-        // 1. 读取模板序列文件（CSV 格式）
         messagingTemplate.convertAndSend("/topic/progress/$userId", "正在读取模板序列文件...")
         val thrSequences = readCsvSequences(templateFilePath)
         messagingTemplate.convertAndSend("/topic/progress/$userId", "读取到 ${thrSequences.size} 个模板序列。")
 
-        // 2. 读取测试序列并添加 CCA
         messagingTemplate.convertAndSend("/topic/progress/$userId", "正在读取测试序列文件...")
         val testSequences = readFastaSequencesWithCCA(testFilePath)
         messagingTemplate.convertAndSend("/topic/progress/$userId", "读取到 ${testSequences.size} 个测试序列。")
 
-        // 3. 对模板序列进行多序列比对，找出保守位点
         messagingTemplate.convertAndSend("/topic/progress/$userId", "正在对模板序列进行多序列比对...")
         val (alignedThrSequences, conservedPositions) = performMultipleSequenceAlignment(thrSequences)
-        messagingTemplate.convertAndSend("/topic/progress/$userId", "模板序列多序列比对完成。")
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "模板序列比对完成。")
 
-        // 4. 对每个测试序列进行比对和打分
         messagingTemplate.convertAndSend("/topic/progress/$userId", "正在对测试序列进行比对和打分...")
-        val results = scoreTestSequences(alignedThrSequences, conservedPositions, testSequences)
-        messagingTemplate.convertAndSend("/topic/progress/$userId", "测试序列比对和打分完成。")
 
-        // 5. 保存结果到 CSV 文件并排序
-        messagingTemplate.convertAndSend("/topic/progress/$userId", "正在保存结果到 CSV 文件...")
+        val results = scoreTestSequences(
+            alignedThrSequences,
+            conservedPositions,
+            testSequences,
+            userId
+        )
+
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "进度：100% - 比对完成")
         val resultsCsvPath = Paths.get(tempDirPath, "results.csv")
         saveResultsToCsv(results, resultsCsvPath.toString())
-        messagingTemplate.convertAndSend("/topic/progress/$userId", "结果保存完成。")
 
         return resultsCsvPath
+    }
+
+    // 修改了此方法，增加了进度更新
+    private fun scoreTestSequences(
+        alignedThrSequences: Map<String, String>,
+        conservedPositions: Set<Int>,
+        testSequences: List<Pair<String, RNASequence>>,
+        userId: Long
+    ): List<Map<String, Any>> {
+        val results = mutableListOf<Map<String, Any>>()
+        val gapPenalty = -2
+
+        // 将已对齐的模板序列转换为 RNASequence 对象
+        val thrSeqs = alignedThrSequences.map { (header, seqStr) ->
+            val seqWithoutGaps = seqStr.replace('-', 'N') // 替换缺口为 'N'
+            val rnaSeq = RNASequence(seqWithoutGaps)
+            rnaSeq.accession = AccessionID(header)
+            rnaSeq
+        }
+
+        for ((index, testPair) in testSequences.withIndex()) {
+            val testHeader = testPair.first
+            val testSeq = testPair.second
+
+            try {
+                testSeq.accession = AccessionID(testHeader)
+
+                val combinedSequences = mutableListOf<RNASequence>()
+                combinedSequences.addAll(thrSeqs)
+                combinedSequences.add(testSeq)
+
+                val gapPenaltyObj = SimpleGapPenalty(5, 2)
+
+                // 使用自定义的 RNA 替换矩阵
+                val substitutionMatrix = getRnaSubstitutionMatrix()
+
+                val msa: Profile<RNASequence, NucleotideCompound> = Alignments.getMultipleSequenceAlignment(
+                    combinedSequences,
+                    Alignments.PairwiseSequenceAlignerType.GLOBAL,
+                    substitutionMatrix,
+                    gapPenaltyObj
+                )
+
+                val alignedSequences = mutableMapOf<String, String>()
+                msa.alignedSequences.forEach { alignedSeq ->
+                    val header = alignedSeq.originalSequence.accession.id
+                    val seq = alignedSeq.toString()
+                    alignedSequences[header] = seq
+                }
+
+                val alignedTestSeq = alignedSequences[testHeader]
+
+                if (alignedTestSeq == null) {
+                    logger.error("未能在比对结果中找到测试序列：$testHeader")
+                    continue
+                }
+
+                // 计算得分
+                var score = 0.0 // 修改为 Double 类型
+                for (pos in conservedPositions) {
+                    val testBase = alignedTestSeq[pos]
+                    if (testBase == '-') {
+                        score += gapPenalty
+                        continue
+                    }
+
+                    val conservedBase = alignedThrSequences.values.first()[pos]
+                    if (testBase == conservedBase) {
+                        score += 1
+                    } else {
+                        score -= 1
+                    }
+                }
+
+                // 归一化得分
+                val normalizedScore = score / conservedPositions.size
+
+                results.add(
+                    mapOf(
+                        "Test_Sequence" to testHeader,
+                        "Score" to normalizedScore,
+                        "Sequence" to testSeq.sequenceAsString
+                    )
+                )
+
+                // 更新进度
+                val progress = ((index + 1).toDouble() / testSequences.size * 80).toInt() + 10
+                messagingTemplate.convertAndSend(
+                    "/topic/progress/$userId",
+                    "进度：$progress% - 已处理测试序列：$testHeader (${index + 1}/${testSequences.size})"
+                )
+
+            } catch (e: Exception) {
+                logger.error("比对失败：${e.message}", e)
+                messagingTemplate.convertAndSend("/topic/progress/$userId", "比对失败：$testHeader，错误信息：${e.message}")
+                continue
+            }
+        }
+
+        return results
     }
 
     // 以下方法保持不变
@@ -235,93 +321,6 @@ class SequenceService(
         }
 
         return Pair(alignedSequences, conservedPositions)
-    }
-
-    // 比对测试序列并计算得分
-    private fun scoreTestSequences(
-        alignedThrSequences: Map<String, String>,
-        conservedPositions: Set<Int>,
-        testSequences: List<Pair<String, RNASequence>>
-    ): List<Map<String, Any>> {
-        val results = mutableListOf<Map<String, Any>>()
-        val gapPenalty = -2
-
-        // 将已对齐的模板序列转换为 RNASequence 对象
-        val thrSeqs = alignedThrSequences.map { (header, seqStr) ->
-            val seqWithoutGaps = seqStr.replace('-', 'N') // 替换缺口为 'N'
-            val rnaSeq = RNASequence(seqWithoutGaps)
-            rnaSeq.accession = AccessionID(header)
-            rnaSeq
-        }
-
-        for ((testHeader, testSeq) in testSequences) {
-            try {
-                testSeq.accession = AccessionID(testHeader)
-
-                val combinedSequences = mutableListOf<RNASequence>()
-                combinedSequences.addAll(thrSeqs)
-                combinedSequences.add(testSeq)
-
-                val gapPenaltyObj = SimpleGapPenalty(5, 2)
-
-                // 使用自定义的 RNA 替换矩阵
-                val substitutionMatrix = getRnaSubstitutionMatrix()
-
-                val msa: Profile<RNASequence, NucleotideCompound> = Alignments.getMultipleSequenceAlignment(
-                    combinedSequences,
-                    Alignments.PairwiseSequenceAlignerType.GLOBAL,
-                    substitutionMatrix,
-                    gapPenaltyObj
-                )
-
-                val alignedSequences = mutableMapOf<String, String>()
-                msa.alignedSequences.forEach { alignedSeq ->
-                    val header = alignedSeq.originalSequence.accession.id
-                    val seq = alignedSeq.toString()
-                    alignedSequences[header] = seq
-                }
-
-                val alignedTestSeq = alignedSequences[testHeader]
-
-                if (alignedTestSeq == null) {
-                    logger.error("未能在比对结果中找到测试序列：$testHeader")
-                    continue
-                }
-
-                // 计算得分
-                var score = 0.0 // 修改为 Double 类型
-                for (pos in conservedPositions) {
-                    val testBase = alignedTestSeq[pos]
-                    if (testBase == '-') {
-                        score += gapPenalty
-                        continue
-                    }
-
-                    val conservedBase = alignedThrSequences.values.first()[pos]
-                    if (testBase == conservedBase) {
-                        score += 1
-                    } else {
-                        score -= 1
-                    }
-                }
-
-                // 归一化得分
-                val normalizedScore = score / conservedPositions.size
-
-                results.add(
-                    mapOf(
-                        "Test_Sequence" to testHeader,
-                        "Score" to normalizedScore,
-                        "Sequence" to testSeq.sequenceAsString
-                    )
-                )
-            } catch (e: Exception) {
-                logger.error("比对失败：${e.message}", e)
-                continue
-            }
-        }
-
-        return results
     }
 
     // 保存结果到 CSV 文件

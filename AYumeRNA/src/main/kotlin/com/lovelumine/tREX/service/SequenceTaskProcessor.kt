@@ -6,6 +6,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.redis.core.StringRedisTemplate
+import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Service
 import java.util.concurrent.TimeUnit
 
@@ -13,7 +14,8 @@ import java.util.concurrent.TimeUnit
 class SequenceTaskProcessor(
     @Autowired private val sequenceService: SequenceService,
     @Autowired private val redisTemplate: StringRedisTemplate,
-    @Autowired private val rabbitTemplate: RabbitTemplate
+    @Autowired private val rabbitTemplate: RabbitTemplate,
+    @Autowired private val messagingTemplate: SimpMessagingTemplate // Ensure SimpMessagingTemplate is injected correctly
 ) {
 
     private val maxRetryCount = 5 // 设置最大重试次数
@@ -21,6 +23,12 @@ class SequenceTaskProcessor(
     @RabbitListener(queues = ["sequenceTasks"], containerFactory = "rabbitListenerContainerFactory")
     fun handleSequenceTask(task: SequenceTask) {
         val lockKey = "sequence_lock:${task.userId}"
+        // Handling nullable queuePosition with default value
+        val queuePosition = redisTemplate.opsForList().size("sequenceTasksQueue") ?: 0
+
+        // Send queue position to WebSocket
+        messagingTemplate.convertAndSend("/topic/progress/${task.userId}", "任务已提交，排在第 ${queuePosition + 1} 位")
+
         val acquiredLock = redisTemplate.opsForValue().setIfAbsent(lockKey, "locked", 1, TimeUnit.HOURS)
         if (acquiredLock == true) {
             println("成功获取到锁：$lockKey")
@@ -36,21 +44,21 @@ class SequenceTaskProcessor(
                 println("释放锁：$lockKey")
             }
         } else {
-            // 用户已有任务在执行，判断是否超过最大重试次数
+            // Handle task retry logic
             if (task.retryCount >= maxRetryCount) {
                 println("用户 ${task.userId} 的任务重试次数过多，放弃处理")
-                // 可以选择记录日志、发送通知或将任务存储到数据库以供后续分析
             } else {
                 println("用户 ${task.userId} 已有任务在执行，任务将重新排队")
-                // 增加重试次数
                 task.retryCount += 1
-                // 设置延迟（例如 5 秒）
-                val delayInMilliseconds = 5000 * task.retryCount // 延迟时间递增
+                val delayInMilliseconds = 5000 * task.retryCount
                 val messagePostProcessor = MessagePostProcessor { message ->
                     message.messageProperties.headers["x-delay"] = delayInMilliseconds
                     message
                 }
                 rabbitTemplate.convertAndSend("sequenceTasksExchange", "sequenceTasks", task, messagePostProcessor)
+
+                // Notify WebSocket of re-queue
+                messagingTemplate.convertAndSend("/topic/progress/${task.userId}", "任务重新排队，第 ${queuePosition + 1} 位")
             }
         }
     }
