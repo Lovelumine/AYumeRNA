@@ -21,8 +21,8 @@ class SecurityConfig(
             .authorizeHttpRequests {
                 it.requestMatchers("/auth/**").permitAll()  // 允许注册和登录接口
                 it.requestMatchers("/swagger-ui/**", "/webjars/**","/api-docs/**","v3/api-docs/**","/v3/api-docs", "/v3/api-docs/swagger-config","/swagger-ui.html","/doc.html").permitAll()
-                it.requestMatchers("/hello","/favicon.ico","docs.html","/api-docs/","student/**","student","student/my-detail").permitAll()
-
+                it.requestMatchers("/hello","/favicon.ico","docs.html","/api-docs/").permitAll()
+                it.requestMatchers("/sequence/process").permitAll()
                 it.anyRequest().authenticated()
             }
             .addFilterBefore(

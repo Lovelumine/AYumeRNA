@@ -32,6 +32,7 @@ class SequenceController(
     @ApiResponses(value = [
         ApiResponse(responseCode = "200", description = "序列处理成功"),
         ApiResponse(responseCode = "400", description = "请求参数错误"),
+        ApiResponse(responseCode = "401", description = "无效的 Token"),
         ApiResponse(responseCode = "500", description = "服务器内部错误")
     ])
     @PostMapping("/process")
@@ -39,7 +40,16 @@ class SequenceController(
         @RequestParam("templateFile") templateFile: MultipartFile,
         @RequestParam("testFile") testFile: MultipartFile
     ): ResponseEntity<Map<String, Any>> {
-        val user = SecurityContextHolder.getContext().authentication.principal as User
+        // 捕获无效的用户认证信息
+        val user: User
+        try {
+            user = SecurityContextHolder.getContext().authentication.principal as User
+        } catch (e: Exception) {
+            // 创建一个包含错误信息的 Map 对象，并传递给 formatResponse
+            val errorData = mapOf("message" to "无效的 Token 或用户未认证", "error" to e.localizedMessage)
+            return ResponseEntity.status(401).body(ResponseUtil.formatResponse(401, errorData))
+        }
+
         val username = user.username
         val bucketName = "ayumerna"
 
