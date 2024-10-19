@@ -60,6 +60,18 @@
             <version>4.4.0</version>
         </dependency>
 
+        <!-- Spring Boot WebSocket 依赖 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
+        <!-- RabbitMQ 依赖 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+
         <!-- 其他需要的 Spring Boot 依赖 -->
         <dependency>
             <groupId>jakarta.persistence</groupId>

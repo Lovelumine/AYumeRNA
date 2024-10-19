@@ -25,6 +25,15 @@ spring:
       port: 6379
       password: lovelumine78
 
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        concurrency: 5  # 设置并发消费者数量
+
 
 logging:
   level:
