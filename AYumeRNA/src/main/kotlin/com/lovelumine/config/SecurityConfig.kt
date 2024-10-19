@@ -17,12 +17,29 @@ class SecurityConfig(
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
-            .csrf { it.disable() }  // 正确的禁用 CSRF 保护方法
+            .csrf { it.disable() }
             .authorizeHttpRequests {
-                it.requestMatchers("/auth/**").permitAll()  // 允许注册和登录接口
-                it.requestMatchers("/swagger-ui/**", "/webjars/**","/api-docs/**","v3/api-docs/**","/v3/api-docs", "/v3/api-docs/swagger-config","/swagger-ui.html","/doc.html").permitAll()
-                it.requestMatchers("/hello","/favicon.ico","docs.html","/api-docs/").permitAll()
-                it.requestMatchers("/sequence/process").permitAll()
+                it.requestMatchers("/auth/**").permitAll()
+                it.requestMatchers(
+                    "/swagger-ui/**",
+                    "/webjars/**",
+                    "/api-docs/**",
+                    "/v3/api-docs/**",
+                    "/v3/api-docs",
+                    "/v3/api-docs/swagger-config",
+                    "/swagger-ui.html",
+                    "/doc.html"
+                ).permitAll()
+                it.requestMatchers(
+                    "/hello",
+                    "/favicon.ico",
+                    "/docs.html",
+                    "/api-docs/",
+                    "/sequence/process",
+                    "/topic/progress/**",
+                    "/ws/**",
+                    "/sockjs/ws/**"
+                ).permitAll()
                 it.anyRequest().authenticated()
             }
             .addFilterBefore(

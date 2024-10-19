@@ -1,60 +1,139 @@
 package com.lovelumine.tREX.service
 
+import com.lovelumine.tREX.model.SequenceTask
+import io.minio.MinioClient
+import io.minio.PutObjectArgs
+import org.biojava.nbio.alignment.Alignments
+import org.biojava.nbio.alignment.SimpleGapPenalty
+import org.biojava.nbio.core.alignment.matrices.SimpleSubstitutionMatrix
+import org.biojava.nbio.core.alignment.template.Profile
+import org.biojava.nbio.core.alignment.template.SubstitutionMatrix
+import org.biojava.nbio.core.sequence.AccessionID
+import org.biojava.nbio.core.sequence.RNASequence
+import org.biojava.nbio.core.sequence.compound.NucleotideCompound
+import org.biojava.nbio.core.sequence.compound.RNACompoundSet
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Service
+import java.io.ByteArrayInputStream
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
-
-// 正确的导入
-import org.biojava.nbio.alignment.Alignments
-import org.biojava.nbio.alignment.SimpleGapPenalty
-import org.biojava.nbio.core.alignment.template.Profile
-import org.biojava.nbio.core.alignment.template.SubstitutionMatrix
-import org.biojava.nbio.core.alignment.matrices.SimpleSubstitutionMatrix
-import org.biojava.nbio.core.sequence.compound.NucleotideCompound
-import org.biojava.nbio.core.sequence.compound.RNACompoundSet
-import org.biojava.nbio.core.sequence.AccessionID
-import org.biojava.nbio.core.sequence.RNASequence
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @Service
-class SequenceService {
+class SequenceService(
+    @Autowired private val minioClient: MinioClient,
+    @Autowired private val messagingTemplate: SimpMessagingTemplate,
+    @Value("\${minio.url}") private val minioBaseUrl: String,
+    @Value("\${minio.bucket-name}") private val bucketName: String
+) {
 
     private val logger = LoggerFactory.getLogger(SequenceService::class.java)
 
-    fun processSequences(
+    // 新增的方法，接受 SequenceTask 参数
+    fun processSequences(task: SequenceTask) {
+        val userId = task.userId
+        val username = task.username
+
+        // 发送任务开始的通知
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "任务开始")
+
+        // 创建临时目录
+        val tempDir = Files.createTempDirectory("sequence_upload_${userId}")
+        val templateFilePath = tempDir.resolve("template.csv")
+        val testFilePath = tempDir.resolve("test.fasta")
+
+        // 将文件数据写入临时文件
+        Files.write(templateFilePath, task.templateFileData)
+        Files.write(testFilePath, task.testFileData)
+
+        try {
+            // 执行序列处理逻辑，并定期发送进度更新
+            messagingTemplate.convertAndSend("/topic/progress/$userId", "进度：10%")
+            val resultsCsvPath = executeSequenceProcessing(
+                templateFilePath.toString(),
+                testFilePath.toString(),
+                tempDir.toString(),
+                userId
+            )
+            messagingTemplate.convertAndSend("/topic/progress/$userId", "进度：90%")
+
+            // 生成唯一的文件名，包含用户ID、时间戳和 "result"
+            val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+            val objectName = "$userId-$timestamp-result.csv"
+
+            // 上传结果文件到 MinIO
+            val resultsBytes = Files.readAllBytes(resultsCsvPath)
+            val inputStream = ByteArrayInputStream(resultsBytes)
+            minioClient.putObject(
+                PutObjectArgs.builder()
+                    .bucket(bucketName)
+                    .`object`(objectName)
+                    .stream(inputStream, resultsBytes.size.toLong(), -1)
+                    .contentType("text/csv")
+                    .build()
+            )
+
+            // 构建文件 URL
+            val fileUrl = "$minioBaseUrl/$bucketName/$objectName"
+
+            // 发送任务完成通知和结果路径
+            messagingTemplate.convertAndSend("/topic/progress/$userId", "任务完成，结果已上传：$fileUrl")
+
+        } catch (e: Exception) {
+            logger.error("任务执行失败：${e.message}", e)
+            messagingTemplate.convertAndSend("/topic/progress/$userId", "任务失败：${e.message}")
+        } finally {
+            // 清理临时文件
+            Files.deleteIfExists(templateFilePath)
+            Files.deleteIfExists(testFilePath)
+            Files.walk(tempDir)
+                .sorted(Comparator.reverseOrder())
+                .forEach(Files::deleteIfExists)
+        }
+    }
+
+    // 原有的处理逻辑，方法名修改为 executeSequenceProcessing
+    private fun executeSequenceProcessing(
         templateFilePath: String,
         testFilePath: String,
-        tempDirPath: String
+        tempDirPath: String,
+        userId: Long
     ): java.nio.file.Path {
         // 1. 读取模板序列文件（CSV 格式）
-        logger.info("正在读取模板序列文件...")
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "正在读取模板序列文件...")
         val thrSequences = readCsvSequences(templateFilePath)
-        logger.info("读取到 ${thrSequences.size} 个模板序列。")
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "读取到 ${thrSequences.size} 个模板序列。")
 
         // 2. 读取测试序列并添加 CCA
-        logger.info("正在读取测试序列文件...")
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "正在读取测试序列文件...")
         val testSequences = readFastaSequencesWithCCA(testFilePath)
-        logger.info("读取到 ${testSequences.size} 个测试序列。")
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "读取到 ${testSequences.size} 个测试序列。")
 
         // 3. 对模板序列进行多序列比对，找出保守位点
-        logger.info("正在对模板序列进行多序列比对...")
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "正在对模板序列进行多序列比对...")
         val (alignedThrSequences, conservedPositions) = performMultipleSequenceAlignment(thrSequences)
-        logger.info("模板序列多序列比对完成。")
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "模板序列多序列比对完成。")
 
         // 4. 对每个测试序列进行比对和打分
-        logger.info("正在对测试序列进行比对和打分...")
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "正在对测试序列进行比对和打分...")
         val results = scoreTestSequences(alignedThrSequences, conservedPositions, testSequences)
-        logger.info("测试序列比对和打分完成。")
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "测试序列比对和打分完成。")
 
         // 5. 保存结果到 CSV 文件并排序
-        logger.info("正在保存结果到 CSV 文件...")
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "正在保存结果到 CSV 文件...")
         val resultsCsvPath = Paths.get(tempDirPath, "results.csv")
         saveResultsToCsv(results, resultsCsvPath.toString())
-        logger.info("结果保存完成。")
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "结果保存完成。")
 
         return resultsCsvPath
     }
+
+    // 以下方法保持不变
 
     // 读取 CSV 文件中的序列
     private fun readCsvSequences(filePath: String): List<Pair<String, RNASequence>> {
