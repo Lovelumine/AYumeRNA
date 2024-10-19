@@ -3,10 +3,19 @@ package com.lovelumine.tREX.service
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.io.File
-import java.io.FileNotFoundException
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.util.concurrent.TimeUnit
+
+// 正确的导入
+import org.biojava.nbio.alignment.Alignments
+import org.biojava.nbio.alignment.SimpleGapPenalty
+import org.biojava.nbio.core.alignment.template.Profile
+import org.biojava.nbio.core.alignment.template.SubstitutionMatrix
+import org.biojava.nbio.core.alignment.matrices.SimpleSubstitutionMatrix
+import org.biojava.nbio.core.sequence.compound.NucleotideCompound
+import org.biojava.nbio.core.sequence.compound.RNACompoundSet
+import org.biojava.nbio.core.sequence.AccessionID
+import org.biojava.nbio.core.sequence.RNASequence
 
 @Service
 class SequenceService {
@@ -18,33 +27,27 @@ class SequenceService {
         testFilePath: String,
         tempDirPath: String
     ): java.nio.file.Path {
-        // 1. 读取 Thr 序列文件（CSV 格式）
-        logger.info("正在读取 Thr 序列文件...")
+        // 1. 读取模板序列文件（CSV 格式）
+        logger.info("正在读取模板序列文件...")
         val thrSequences = readCsvSequences(templateFilePath)
-        logger.info("读取到 ${thrSequences.size} 个 Thr 序列。")
+        logger.info("读取到 ${thrSequences.size} 个模板序列。")
 
         // 2. 读取测试序列并添加 CCA
         logger.info("正在读取测试序列文件...")
         val testSequences = readFastaSequencesWithCCA(testFilePath)
         logger.info("读取到 ${testSequences.size} 个测试序列。")
 
-        // 3. 将 Thr 序列写入 FASTA 文件
-        val thrFastaPath = Paths.get(tempDirPath, "Thr_sequences.fasta")
-        val thrSequencesWithHeaders = thrSequences.mapIndexed { index, seq -> Pair("Thr_seq_$index", seq) }
-        writeSequencesToFasta(thrSequencesWithHeaders, thrFastaPath.toString())
-        logger.info("Thr 序列已写入 FASTA 文件。")
+        // 3. 对模板序列进行多序列比对，找出保守位点
+        logger.info("正在对模板序列进行多序列比对...")
+        val (alignedThrSequences, conservedPositions) = performMultipleSequenceAlignment(thrSequences)
+        logger.info("模板序列多序列比对完成。")
 
-        // 4. 进行多序列比对
-        logger.info("正在进行多序列比对...")
-        val thrAlignmentPath = runClustalW(thrFastaPath.toString())
-        logger.info("多序列比对完成。")
-
-        // 5. 比对测试序列并计算得分
-        logger.info("正在进行测试序列比对和打分...")
-        val results = scoreTestSequences(thrSequences, testSequences, tempDirPath)
+        // 4. 对每个测试序列进行比对和打分
+        logger.info("正在对测试序列进行比对和打分...")
+        val results = scoreTestSequences(alignedThrSequences, conservedPositions, testSequences)
         logger.info("测试序列比对和打分完成。")
 
-        // 6. 保存结果到 CSV 文件并排序
+        // 5. 保存结果到 CSV 文件并排序
         logger.info("正在保存结果到 CSV 文件...")
         val resultsCsvPath = Paths.get(tempDirPath, "results.csv")
         saveResultsToCsv(results, resultsCsvPath.toString())
@@ -54,180 +57,183 @@ class SequenceService {
     }
 
     // 读取 CSV 文件中的序列
-    private fun readCsvSequences(filePath: String): List<String> {
-        val sequences = mutableListOf<String>()
-        Files.lines(Paths.get(filePath)).use { lines ->
-            lines.skip(1) // 跳过表头
-                .forEach { line ->
-                    val columns = line.split(",")
-                    if (columns.isNotEmpty()) {
-                        sequences.add(columns.last().trim()) // 假设序列在最后一列
-                    }
+    private fun readCsvSequences(filePath: String): List<Pair<String, RNASequence>> {
+        val sequences = mutableListOf<Pair<String, RNASequence>>()
+        Files.newBufferedReader(Paths.get(filePath)).use { reader ->
+            reader.readLine() // 跳过表头
+            var index = 0
+            reader.lineSequence().forEach { line ->
+                val columns = line.split(",")
+                if (columns.isNotEmpty()) {
+                    val seqStr = columns.last().trim() // 假设序列在最后一列
+                    val seq = RNASequence(seqStr)
+                    val header = "Thr_seq_$index"
+                    sequences.add(Pair(header, seq))
+                    index++
                 }
+            }
         }
         return sequences
     }
 
     // 读取 FASTA 文件中的序列并添加 CCA
-    private fun readFastaSequencesWithCCA(filePath: String): List<Pair<String, String>> {
-        val sequences = mutableListOf<Pair<String, String>>()
+    private fun readFastaSequencesWithCCA(filePath: String): List<Pair<String, RNASequence>> {
+        val sequences = mutableListOf<Pair<String, RNASequence>>()
         var header: String? = null
-        Files.lines(Paths.get(filePath)).use { lines ->
-            lines.forEach { line ->
+        val seqBuilder = StringBuilder()
+        Files.newBufferedReader(Paths.get(filePath)).use { reader ->
+            reader.lineSequence().forEach { line ->
                 if (line.startsWith(">")) {
-                    header = line.trim()
+                    if (header != null && seqBuilder.isNotEmpty()) {
+                        val sequence = seqBuilder.toString() + "CCA"
+                        val rnaSeq = RNASequence(sequence)
+                        sequences.add(Pair(header!!, rnaSeq))
+                        seqBuilder.clear()
+                    }
+                    header = line.trim().removePrefix(">")
                 } else {
-                    val sequence = line.trim() + "CCA"
-                    sequences.add(Pair(header ?: ">Unknown", sequence))
+                    seqBuilder.append(line.trim())
                 }
+            }
+            // 添加最后一个序列
+            if (header != null && seqBuilder.isNotEmpty()) {
+                val sequence = seqBuilder.toString() + "CCA"
+                val rnaSeq = RNASequence(sequence)
+                sequences.add(Pair(header!!, rnaSeq))
             }
         }
         return sequences
     }
 
-    // 将序列写入 FASTA 文件
-    private fun writeSequencesToFasta(
-        sequences: List<Pair<String, String>>,
-        filePath: String
-    ) {
-        val file = File(filePath)
-        file.bufferedWriter().use { writer ->
-            sequences.forEach { (header, seq) ->
-                writer.write(">$header\n")
-                writer.write("$seq\n")
-            }
-        }
+    // 创建适用于 RNA 的替换矩阵
+    private fun getRnaSubstitutionMatrix(): SubstitutionMatrix<NucleotideCompound> {
+        val rnaCompounds = RNACompoundSet.getRNACompoundSet()
+
+        // 定义匹配和不匹配的分数
+        val matchScore: Short = 1
+        val mismatchScore: Short = -1
+
+        // 创建替换矩阵
+        return SimpleSubstitutionMatrix(rnaCompounds, matchScore, mismatchScore)
     }
 
-    // 调用 ClustalW 进行多序列比对
-    private fun runClustalW(inputFilePath: String): String {
-        val clustalwExe = "C:\\Program Files (x86)\\ClustalW2\\clustalw2.exe" // 修改为实际路径
-
-        // 检查可执行文件是否存在
-        val clustalwFile = File(clustalwExe)
-        if (!clustalwFile.exists()) {
-            throw FileNotFoundException("ClustalW 可执行文件未找到：$clustalwExe")
+    // 使用 BioJava 进行多序列比对，返回比对后的序列和保守位点列表
+    private fun performMultipleSequenceAlignment(
+        sequences: List<Pair<String, RNASequence>>
+    ): Pair<Map<String, String>, Set<Int>> {
+        val rnaSequences = sequences.map { (header, seq) ->
+            seq.accession = AccessionID(header)
+            seq
         }
 
-        // 构建命令
-        val command = listOf(clustalwExe, "-INFILE=$inputFilePath", "-OUTPUT=CLUSTAL")
-        logger.info("运行 ClustalW 命令：${command.joinToString(" ")}")
+        val gapPenalty = SimpleGapPenalty(5, 2)
 
-        // 设置环境变量，确保 PATH 包含 Clustalw2 的路径
-        val processBuilder = ProcessBuilder(command)
-        val env = processBuilder.environment()
-        env["PATH"] = env["PATH"] + ";${clustalwFile.parent}"
+        // 使用自定义的 RNA 替换矩阵
+        val substitutionMatrix = getRnaSubstitutionMatrix()
 
-        processBuilder.redirectErrorStream(true)
-        val process = processBuilder.start()
+        val msa: Profile<RNASequence, NucleotideCompound> = Alignments.getMultipleSequenceAlignment(
+            rnaSequences,
+            Alignments.PairwiseSequenceAlignerType.GLOBAL,
+            substitutionMatrix,
+            gapPenalty
+        )
 
-        val output = process.inputStream.bufferedReader().use { it.readText() }
-        logger.info("ClustalW 输出：\n$output")
-
-        if (!process.waitFor(5, TimeUnit.MINUTES)) {
-            process.destroy()
-            throw RuntimeException("ClustalW 运行超时")
+        val alignedSequences = mutableMapOf<String, String>()
+        msa.alignedSequences.forEach { alignedSeq ->
+            val header = alignedSeq.originalSequence.accession.id
+            val seq = alignedSeq.toString()
+            alignedSequences[header] = seq
         }
 
-        if (process.exitValue() != 0) {
-            throw RuntimeException("ClustalW 运行失败，退出代码：${process.exitValue()}，输出：$output")
-        }
-
-        return inputFilePath.replace(".fasta", ".aln")
-    }
-
-
-    // 手动解析 ClustalW 比对结果
-    private fun parseClustalAlignment(alignmentFilePath: String): Map<String, String> {
-        val alignedSequences = mutableMapOf<String, StringBuilder>()
-        val file = File(alignmentFilePath)
-        if (!file.exists()) {
-            throw FileNotFoundException("比对文件未找到：$alignmentFilePath")
-        }
-
-        val lines = file.readLines()
-        for (line in lines) {
-            if (line.isBlank() || line.startsWith("CLUSTAL") || line.startsWith("MUSCLE")) {
-                // 跳过头部信息和空行
-                continue
-            }
-
-            if (line.contains("*") || line.contains(":") || line.contains(".")) {
-                // 跳过比对标记行
-                continue
-            }
-
-            val tokens = line.trim().split(Regex("\\s+"))
-            if (tokens.size >= 2) {
-                val seqName = tokens[0]
-                val seqData = tokens[1]
-
-                val seqBuilder = alignedSequences.getOrPut(seqName) { StringBuilder() }
-                seqBuilder.append(seqData)
+        // 找出保守位点
+        val sequenceLength = alignedSequences.values.first().length
+        val conservedPositions = mutableSetOf<Int>()
+        for (i in 0 until sequenceLength) {
+            val basesAtPosition = alignedSequences.values.map { it[i] }.toSet()
+            if (basesAtPosition.size == 1 && basesAtPosition.first() != '-') {
+                conservedPositions.add(i)
             }
         }
 
-        // 将 StringBuilder 转换为 String
-        return alignedSequences.mapValues { it.value.toString() }
+        return Pair(alignedSequences, conservedPositions)
     }
 
     // 比对测试序列并计算得分
     private fun scoreTestSequences(
-        thrSequences: List<String>,
-        testSequences: List<Pair<String, String>>,
-        tempDirPath: String
+        alignedThrSequences: Map<String, String>,
+        conservedPositions: Set<Int>,
+        testSequences: List<Pair<String, RNASequence>>
     ): List<Map<String, Any>> {
         val results = mutableListOf<Map<String, Any>>()
-        val clustalwExe = "Clustalw2"
+        val gapPenalty = -2
 
-        for ((testName, testSeq) in testSequences) {
-            var score = 0
-            // 准备组合的序列列表
-            val combinedSequences = mutableListOf<Pair<String, String>>()
-            thrSequences.forEachIndexed { index, seq ->
-                combinedSequences.add(Pair("Thr_seq_$index", seq))
-            }
-            combinedSequences.add(Pair(testName.removePrefix(">"), testSeq))
+        // 将已对齐的模板序列转换为 RNASequence 对象
+        val thrSeqs = alignedThrSequences.map { (header, seqStr) ->
+            val seqWithoutGaps = seqStr.replace('-', 'N') // 替换缺口为 'N'
+            val rnaSeq = RNASequence(seqWithoutGaps)
+            rnaSeq.accession = AccessionID(header)
+            rnaSeq
+        }
 
-            // 写入组合的 FASTA 文件
-            val combinedFastaPath = Paths.get(tempDirPath, "combined_sequences.fasta")
-            writeSequencesToFasta(combinedSequences, combinedFastaPath.toString())
-
-            // 进行比对
+        for ((testHeader, testSeq) in testSequences) {
             try {
-                val alignmentPath = runClustalW(combinedFastaPath.toString())
-                // 手动解析比对结果
-                val alignedSequences = parseClustalAlignment(alignmentPath)
+                testSeq.accession = AccessionID(testHeader)
 
-                // 获取对齐的 Thr 序列和测试序列
-                val thrSeqNames = thrSequences.indices.map { "Thr_seq_$it" }
-                val alignedThrSeqs = thrSeqNames.mapNotNull { alignedSequences[it] }
-                val alignedTestSeq = alignedSequences[testName.removePrefix(">")]
+                val combinedSequences = mutableListOf<RNASequence>()
+                combinedSequences.addAll(thrSeqs)
+                combinedSequences.add(testSeq)
+
+                val gapPenaltyObj = SimpleGapPenalty(5, 2)
+
+                // 使用自定义的 RNA 替换矩阵
+                val substitutionMatrix = getRnaSubstitutionMatrix()
+
+                val msa: Profile<RNASequence, NucleotideCompound> = Alignments.getMultipleSequenceAlignment(
+                    combinedSequences,
+                    Alignments.PairwiseSequenceAlignerType.GLOBAL,
+                    substitutionMatrix,
+                    gapPenaltyObj
+                )
+
+                val alignedSequences = mutableMapOf<String, String>()
+                msa.alignedSequences.forEach { alignedSeq ->
+                    val header = alignedSeq.originalSequence.accession.id
+                    val seq = alignedSeq.toString()
+                    alignedSequences[header] = seq
+                }
+
+                val alignedTestSeq = alignedSequences[testHeader]
 
                 if (alignedTestSeq == null) {
-                    logger.error("未能在比对结果中找到测试序列：$testName")
+                    logger.error("未能在比对结果中找到测试序列：$testHeader")
                     continue
                 }
 
                 // 计算得分
-                val alignmentLength = alignedTestSeq.length
-                for (i in 0 until alignmentLength) {
-                    val testBase = alignedTestSeq[i]
-                    for (thrSeq in alignedThrSeqs) {
-                        val thrBase = thrSeq[i]
-                        if (testBase == thrBase) {
-                            score += 1
-                        } else {
-                            score -= 1
-                        }
+                var score = 0.0 // 修改为 Double 类型
+                for (pos in conservedPositions) {
+                    val testBase = alignedTestSeq[pos]
+                    if (testBase == '-') {
+                        score += gapPenalty
+                        continue
+                    }
+
+                    val conservedBase = alignedThrSequences.values.first()[pos]
+                    if (testBase == conservedBase) {
+                        score += 1
+                    } else {
+                        score -= 1
                     }
                 }
-                val avgScore = score.toDouble() / thrSequences.size
+
+                // 归一化得分
+                val normalizedScore = score / conservedPositions.size
+
                 results.add(
                     mapOf(
-                        "Test_Sequence" to testName,
-                        "Score" to avgScore,
-                        "Sequence" to testSeq
+                        "Test_Sequence" to testHeader,
+                        "Score" to normalizedScore,
+                        "Sequence" to testSeq.sequenceAsString
                     )
                 )
             } catch (e: Exception) {
@@ -235,6 +241,7 @@ class SequenceService {
                 continue
             }
         }
+
         return results
     }
 
@@ -245,7 +252,10 @@ class SequenceService {
             writer.write("Test_Sequence,Score,Sequence\n")
             results.sortedByDescending { it["Score"] as Double }
                 .forEach { result ->
-                    writer.write("${result["Test_Sequence"]},${result["Score"]},${result["Sequence"]}\n")
+                    val testSeq = result["Test_Sequence"]
+                    val score = result["Score"]
+                    val sequence = result["Sequence"]
+                    writer.write("$testSeq,$score,$sequence\n")
                 }
         }
     }
