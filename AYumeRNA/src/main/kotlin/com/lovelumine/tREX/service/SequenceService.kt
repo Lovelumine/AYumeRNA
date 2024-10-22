@@ -54,7 +54,7 @@ class SequenceService(
                 tempDir.toString(),
                 userId
             )
-            messagingTemplate.convertAndSend("/topic/progress/$userId", "进度：90% - 序列比对完成，保存结果中...")
+            messagingTemplate.convertAndSend("/topic/progress/$userId", "序列比对完成，保存结果中...")
 
             val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
             val objectName = "$userId-$timestamp-result.csv"

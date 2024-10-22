@@ -23,12 +23,21 @@ class SequenceTaskProcessor(
     @RabbitListener(queues = ["sequenceTasks"], containerFactory = "rabbitListenerContainerFactory")
     fun handleSequenceTask(task: SequenceTask) {
         val lockKey = "sequence_lock:${task.userId}"
-        // Handling nullable queuePosition with default value
-        val queuePosition = redisTemplate.opsForList().size("sequenceTasksQueue") ?: 0
+        val queueKey = "sequenceTasksQueue"
 
-        // Send queue position to WebSocket
+        // 将任务添加到队列尾部
+        redisTemplate.opsForList().rightPush(queueKey, task.userId.toString())
+
+        // 获取整个队列的长度
+        val queueLength = redisTemplate.opsForList().size(queueKey) ?: 0
+
+        // 获取任务在队列中的位置（从0开始计数）
+        val queuePosition = redisTemplate.opsForList().range(queueKey, 0, -1)?.indexOf(task.userId.toString()) ?: -1
+
+        // 通知前端任务的队列位置
         messagingTemplate.convertAndSend("/topic/progress/${task.userId}", "任务已提交，排在第 ${queuePosition + 1} 位")
 
+        // 尝试获取任务锁
         val acquiredLock = redisTemplate.opsForValue().setIfAbsent(lockKey, "locked", 1, TimeUnit.HOURS)
         if (acquiredLock == true) {
             println("成功获取到锁：$lockKey")
@@ -39,12 +48,15 @@ class SequenceTaskProcessor(
                 println("处理任务时发生异常：${e.message}")
                 e.printStackTrace()
             } finally {
-                // 释放锁
+                // 释放锁，并从Redis队列中移除任务
                 redisTemplate.delete(lockKey)
-                println("释放锁：$lockKey")
+
+                // 从队列头部移除第一个任务
+                redisTemplate.opsForList().leftPop(queueKey)
+                println("释放锁并移除队列中的任务：$lockKey")
             }
         } else {
-            // Handle task retry logic
+            // 处理重试逻辑
             if (task.retryCount >= maxRetryCount) {
                 println("用户 ${task.userId} 的任务重试次数过多，放弃处理")
             } else {
@@ -57,8 +69,11 @@ class SequenceTaskProcessor(
                 }
                 rabbitTemplate.convertAndSend("sequenceTasksExchange", "sequenceTasks", task, messagePostProcessor)
 
-                // Notify WebSocket of re-queue
-                messagingTemplate.convertAndSend("/topic/progress/${task.userId}", "任务重新排队，第 ${queuePosition + 1} 位")
+                // 通知前端任务重新排队
+                messagingTemplate.convertAndSend(
+                    "/topic/progress/${task.userId}",
+                    "任务重新排队，第 ${queuePosition + 1} 位"
+                )
             }
         }
     }
