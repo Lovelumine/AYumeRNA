@@ -34,6 +34,10 @@ spring:
       simple:
         concurrency: 5  # 设置并发消费者数量
 
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 200MB
 
 logging:
   level:

@@ -2,14 +2,14 @@ package com.lovelumine.Rfam.service
 
 import com.lovelumine.Rfam.model.RfamTask
 import com.lovelumine.Rfam.utils.RfamUtils
+import io.minio.GetObjectArgs
 import io.minio.MinioClient
-import io.minio.PutObjectArgs
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Service
-import java.io.ByteArrayInputStream
+import java.io.FileOutputStream
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.LocalDateTime
@@ -28,8 +28,6 @@ class RfamService(
     fun processRfamTask(task: RfamTask) {
         val userId = task.userId
         val rfamAcc = task.rfamAcc
-        val seedFileData = task.seedFileData
-        val originalFileData = task.originalFileData
 
         try {
             // 创建临时目录
@@ -37,27 +35,33 @@ class RfamService(
             val seedFilePath = Paths.get(tempDir, "Rfam.seed")
             val originalFilePath = Paths.get(tempDir, "original.fa")
 
-            // 将 seedFileData 和 originalFileData 写入文件
-            Files.write(seedFilePath, seedFileData.toByteArray())
-            Files.write(originalFilePath, originalFileData.toByteArray())
+            // 从 MinIO 下载文件
+            downloadFromMinio(task.seedFileUrl, seedFilePath.toString())
+            downloadFromMinio(task.originalFileUrl, originalFilePath.toString())
 
             // 通知进度
             messagingTemplate.convertAndSend("/topic/progress/$userId", "进度：10% - 开始处理任务...")
 
-            // 调用工具类的方法处理任务
-            val resultPath = RfamUtils.processRfamTask(rfamAcc, originalFilePath.toString(), seedFilePath.toString())
+            // 调用工具类的方法处理任务，并记录详细信息
+            val resultPath = RfamUtils.processRfamTask(
+                rfamAcc,
+                originalFilePath.toString(),
+                seedFilePath.toString()
+            ) { foundSeq, seedSeqCount, retainedSeqCount ->
+                logger.info("找到的序列总数: $foundSeq, 种子序列数量: $seedSeqCount, 保留序列数量: $retainedSeqCount")
+                messagingTemplate.convertAndSend("/topic/progress/$userId", "处理详情：找到的序列总数: $foundSeq，种子序列: $seedSeqCount，保留序列: $retainedSeqCount")
+            }
 
             // 上传结果到 MinIO
             val resultBytes = Files.readAllBytes(Paths.get(resultPath))
-            val inputStream = ByteArrayInputStream(resultBytes)
             val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
             val objectName = "$userId-$rfamAcc-$timestamp-result.fa"
 
             minioClient.putObject(
-                PutObjectArgs.builder()
+                io.minio.PutObjectArgs.builder()
                     .bucket(bucketName)
                     .`object`(objectName)
-                    .stream(inputStream, resultBytes.size.toLong(), -1)
+                    .stream(resultBytes.inputStream(), resultBytes.size.toLong(), -1)
                     .contentType("text/fasta")
                     .build()
             )
@@ -73,6 +77,20 @@ class RfamService(
         } catch (e: Exception) {
             e.printStackTrace()
             messagingTemplate.convertAndSend("/topic/progress/$userId", "任务失败：${e.message}")
+        }
+    }
+
+    // 从 MinIO 下载文件
+    private fun downloadFromMinio(fileUrl: String, outputPath: String) {
+        val objectName = fileUrl.substringAfterLast("/")
+        val inputStream = minioClient.getObject(
+            GetObjectArgs.builder()
+                .bucket(bucketName)
+                .`object`(objectName)
+                .build()
+        )
+        FileOutputStream(outputPath).use { outputStream ->
+            inputStream.copyTo(outputStream)
         }
     }
 }
