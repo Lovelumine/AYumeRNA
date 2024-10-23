@@ -5,7 +5,7 @@ import java.io.Serializable
 data class RfamTask(
     val userId: Long,
     val rfamAcc: String,
-    val seedFileData: String, // Rfam.seed 文件的内容
-    val originalFileData: String, // 原始序列文件的内容
+    val seedFileUrl: String, // MinIO 中种子文件的 URL
+    val originalFileUrl: String, // MinIO 中原始序列文件的 URL
     var retryCount: Int = 0 // 记录重试次数
 ) : Serializable
