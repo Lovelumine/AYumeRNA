@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 class RabbitMQConfig {
 
+    // 配置 sequenceTasks 队列、交换机和绑定
     @Bean
     fun sequenceTasksQueue(): Queue {
         return QueueBuilder.durable("sequenceTasks").build()
@@ -25,16 +26,34 @@ class RabbitMQConfig {
     }
 
     @Bean
-    fun binding(): Binding {
+    fun sequenceTasksBinding(): Binding {
         return BindingBuilder.bind(sequenceTasksQueue()).to(sequenceTasksExchange()).with("sequenceTasks").noargs()
     }
 
+    // 配置 RfamTasks 队列、交换机和绑定
+    @Bean
+    fun rfamTasksQueue(): Queue {
+        return QueueBuilder.durable("rfamTasks").build()
+    }
+
+    @Bean
+    fun rfamTasksExchange(): DirectExchange {
+        return ExchangeBuilder.directExchange("rfamTasksExchange").durable(true).build()
+    }
+
+    @Bean
+    fun rfamTasksBinding(): Binding {
+        return BindingBuilder.bind(rfamTasksQueue()).to(rfamTasksExchange()).with("rfamTasks")
+    }
+
+    // 配置消息转换器，序列化和反序列化为 JSON 格式
     @Bean
     fun jackson2JsonMessageConverter(): Jackson2JsonMessageConverter {
         val objectMapper = ObjectMapper().registerModule(kotlinModule())
         return Jackson2JsonMessageConverter(objectMapper)
     }
 
+    // RabbitTemplate 配置
     @Bean
     fun rabbitTemplate(
         connectionFactory: ConnectionFactory
@@ -44,6 +63,7 @@ class RabbitMQConfig {
         return rabbitTemplate
     }
 
+    // RabbitListener 容器工厂配置，用于监听队列的消费
     @Bean
     fun rabbitListenerContainerFactory(connectionFactory: ConnectionFactory): SimpleRabbitListenerContainerFactory {
         val factory = SimpleRabbitListenerContainerFactory()
