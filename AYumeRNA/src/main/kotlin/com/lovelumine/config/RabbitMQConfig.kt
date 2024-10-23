@@ -2,6 +2,7 @@ package com.lovelumine.config
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.kotlinModule
+import org.slf4j.LoggerFactory
 import org.springframework.amqp.core.*
 import org.springframework.amqp.rabbit.connection.ConnectionFactory
 import org.springframework.amqp.rabbit.core.RabbitTemplate
@@ -12,6 +13,8 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 class RabbitMQConfig {
+
+    private val logger = LoggerFactory.getLogger(RabbitMQConfig::class.java)
 
     // 配置 sequenceTasks 队列、交换机和绑定
     @Bean
@@ -46,6 +49,22 @@ class RabbitMQConfig {
         return BindingBuilder.bind(rfamTasksQueue()).to(rfamTasksExchange()).with("rfamTasks")
     }
 
+    // 配置 cmbuildTasks 队列、交换机和绑定
+    @Bean
+    fun cmbuildTasksQueue(): Queue {
+        return QueueBuilder.durable("cmbuildTasks").build()
+    }
+
+    @Bean
+    fun cmbuildTasksExchange(): DirectExchange {
+        return ExchangeBuilder.directExchange("cmbuildTasksExchange").durable(true).build()
+    }
+
+    @Bean
+    fun cmbuildTasksBinding(): Binding {
+        return BindingBuilder.bind(cmbuildTasksQueue()).to(cmbuildTasksExchange()).with("cmbuildTasks")
+    }
+
     // 配置消息转换器，序列化和反序列化为 JSON 格式
     @Bean
     fun jackson2JsonMessageConverter(): Jackson2JsonMessageConverter {
@@ -71,6 +90,9 @@ class RabbitMQConfig {
         factory.setConcurrentConsumers(3) // 设置并发消费者数量为 3
         factory.setMaxConcurrentConsumers(3) // 最大并发消费者数量为 3
         factory.setMessageConverter(jackson2JsonMessageConverter())
+        factory.setErrorHandler { throwable ->
+            logger.error("RabbitMQ 消息处理异常：${throwable.message}", throwable)
+        }
         return factory
     }
 }
