@@ -33,7 +33,7 @@ class RabbitMQConfig {
         return BindingBuilder.bind(sequenceTasksQueue()).to(sequenceTasksExchange()).with("sequenceTasks").noargs()
     }
 
-    // 配置 RfamTasks 队列、交换机和绑定
+    // 配置 rfamTasks 队列、交换机和绑定
     @Bean
     fun rfamTasksQueue(): Queue {
         return QueueBuilder.durable("rfamTasks").build()
@@ -63,6 +63,22 @@ class RabbitMQConfig {
     @Bean
     fun cmbuildTasksBinding(): Binding {
         return BindingBuilder.bind(cmbuildTasksQueue()).to(cmbuildTasksExchange()).with("cmbuildTasks")
+    }
+
+    // 配置 onehotTasks 队列、交换机和绑定
+    @Bean
+    fun onehotTasksQueue(): Queue {
+        return QueueBuilder.durable("onehotTasks").build()
+    }
+
+    @Bean
+    fun onehotTasksExchange(): DirectExchange {
+        return ExchangeBuilder.directExchange("onehotTasksExchange").durable(true).build()
+    }
+
+    @Bean
+    fun onehotTasksBinding(): Binding {
+        return BindingBuilder.bind(onehotTasksQueue()).to(onehotTasksExchange()).with("onehotTasks")
     }
 
     // 配置消息转换器，序列化和反序列化为 JSON 格式
