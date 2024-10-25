@@ -6,8 +6,24 @@ import tempfile
 from flask import Flask, request, jsonify
 from pathlib import Path
 from scripts.make_onehot_from_traceback import make_onehot_of_cm_from_traceback
+from minio import Minio
+import datetime
 
 app = Flask(__name__)
+
+# MinIO 配置
+MINIO_URL = 'http://minio.lumoxuan.cn'  # 替换为您的 MinIO 服务地址，确保包含协议（http:// 或 https://）
+MINIO_ACCESS_KEY = 'uv9Ey4hCgAeF9US8IvW7'    # 替换为您的 MinIO Access Key
+MINIO_SECRET_KEY = 'EJxNuc7hJId6cW969JXcMtd14xs7d9wTmC17Mn5W'    # 替换为您的 MinIO Secret Key
+MINIO_BUCKET_NAME = 'ayumerna'          # 替换为您的 MinIO 存储桶名称
+
+# 初始化 MinIO 客户端
+minio_client = Minio(
+    MINIO_URL.replace('http://', '').replace('https://', ''),  # 去掉协议部分
+    access_key=MINIO_ACCESS_KEY,
+    secret_key=MINIO_SECRET_KEY,
+    secure=MINIO_URL.startswith('https://')
+)
 
 # 禁用代理（确保不使用系统配置的代理）
 os.environ['NO_PROXY'] = '*'
@@ -28,7 +44,7 @@ def download_file_from_minio(url, destination):
         raise
 
 # 调用 cmalign 生成对齐文件和 traceback.txt
-def run_cmalign(fasta_file, cmfile, cpu_cores=4):
+def run_cmalign(fasta_file, cmfile, cpu_cores=4, progress_messages=[]):
     try:
         # 生成相关文件的名称
         basename, _ = os.path.splitext(fasta_file)
@@ -46,54 +62,75 @@ def run_cmalign(fasta_file, cmfile, cpu_cores=4):
             f"--sfile {score_file} --ifile {insertion_file} --elfile {elstate_file} "
             f"{cmfile} {fasta_file} > {outstk_tmp}"
         )
-        print(f"Running cmalign with command: {cmalign_cmd}")
+        progress_messages.append(f"Running cmalign with command: {cmalign_cmd}")
         result = subprocess.run(cmalign_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        print(f"cmalign output: {result.stdout.decode('utf-8', errors='replace')}")
-        print(f"cmalign error (if any): {result.stderr.decode('utf-8', errors='replace')}")
+        progress_messages.append(f"cmalign output: {result.stdout.decode('utf-8', errors='replace')}")
+        progress_messages.append(f"cmalign error (if any): {result.stderr.decode('utf-8', errors='replace')}")
         result.check_returncode()  # 检查命令是否执行成功
 
         # 压缩 traceback.txt 为 gzip 格式，强制覆盖已有文件 (-f)
         gzip_cmd = f"gzip -f {traceback_file}"
-        print(f"Compressing {traceback_file} to {gz_traceback_file}")
+        progress_messages.append(f"Compressing {traceback_file} to {gz_traceback_file}")
         result = subprocess.run(gzip_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        print(f"gzip output: {result.stdout.decode('utf-8', errors='replace')}")
-        print(f"gzip error (if any): {result.stderr.decode('utf-8', errors='replace')}")
+        progress_messages.append(f"gzip output: {result.stdout.decode('utf-8', errors='replace')}")
+        progress_messages.append(f"gzip error (if any): {result.stderr.decode('utf-8', errors='replace')}")
         result.check_returncode()
 
         # 使用 esl-reformat 进行 Stockholm 文件的重新格式化
-        esl_reformat_cmd = f"/home/lovelumine/bin/esl-reformat --informat stockholm -o {outstk} stockholm {outstk_tmp}"
-        print(f"Running esl-reformat with command: {esl_reformat_cmd}")
+        esl_reformat_cmd = f"esl-reformat --informat stockholm -o {outstk} stockholm {outstk_tmp}"
+        progress_messages.append(f"Running esl-reformat with command: {esl_reformat_cmd}")
         result = subprocess.run(esl_reformat_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        print(f"esl-reformat output: {result.stdout.decode('utf-8', errors='replace')}")
-        print(f"esl-reformat error (if any): {result.stderr.decode('utf-8', errors='replace')}")
+        progress_messages.append(f"esl-reformat output: {result.stdout.decode('utf-8', errors='replace')}")
+        progress_messages.append(f"esl-reformat error (if any): {result.stderr.decode('utf-8', errors='replace')}")
         result.check_returncode()
 
         # 删除临时的 sto 文件
-        print(f"Removing temporary file: {outstk_tmp}")
+        progress_messages.append(f"Removing temporary file: {outstk_tmp}")
         os.remove(outstk_tmp)
 
         return gz_traceback_file
 
     except Exception as e:
-        print(f"Error during cmalign process: {str(e)}")
+        progress_messages.append(f"Error during cmalign process: {str(e)}")
         raise
 
 # 主处理逻辑
-def process_traceback(fasta_file, cmfile, cpu_cores):
+def process_traceback(fasta_file, cmfile, cpu_cores, user_id):
+    progress_messages = []
     try:
         # 调用 cmalign 生成对齐和 traceback 文件
-        gz_traceback_file = run_cmalign(fasta_file, cmfile, cpu_cores)
-        print(f"Generated gzipped traceback file: {gz_traceback_file}")
+        gz_traceback_file = run_cmalign(fasta_file, cmfile, cpu_cores, progress_messages)
+        progress_messages.append(f"Generated gzipped traceback file: {gz_traceback_file}")
 
         # 调用 make_onehot_of_cm_from_traceback 处理生成的 gz 文件
-        print(f"Calling make_onehot_of_cm_from_traceback with: {gz_traceback_file}, {cmfile}")
-        output_h5 = make_onehot_of_cm_from_traceback(gz_traceback_file, cmfile)
-        print(f"Onehot file created: {output_h5}")
+        progress_messages.append(f"Calling make_onehot_of_cm_from_traceback with: {gz_traceback_file}, {cmfile}")
+        output_h5 = make_onehot_of_cm_from_traceback(gz_traceback_file, cmfile, progress_messages)
+        progress_messages.append(f"Onehot file created: {output_h5}")
 
-        return output_h5
+        # 上传生成的 h5 文件到 MinIO
+        timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+        object_name = f"{user_id}-{timestamp}-onehot.h5"
+
+        # 确保存储桶存在
+        found = minio_client.bucket_exists(MINIO_BUCKET_NAME)
+        if not found:
+            minio_client.make_bucket(MINIO_BUCKET_NAME)
+
+        # 上传文件
+        minio_client.fput_object(
+            MINIO_BUCKET_NAME,
+            object_name,
+            output_h5,
+            content_type='application/octet-stream'
+        )
+
+        minio_url = f"{MINIO_URL}/{MINIO_BUCKET_NAME}/{object_name}"
+        progress_messages.append(f"Uploaded file to MinIO: {minio_url}")
+
+        return minio_url, progress_messages
 
     except Exception as e:
-        print(f"Error in processing traceback: {str(e)}")
+        progress_messages.append(f"Error in processing traceback: {str(e)}")
         raise
 
 # Flask 处理请求的部分：
@@ -108,6 +145,7 @@ def handle_process_traceback():
         fasta_url = data.get('traceback')
         cmfile_url = data.get('cmfile')
         cpu_cores = data.get('cpu', 4)
+        user_id = data.get('user_id', 'unknown_user')
 
         if not fasta_url or not cmfile_url:
             print("Missing traceback or cmfile in the request")
@@ -123,10 +161,10 @@ def handle_process_traceback():
         download_file_from_minio(cmfile_url, cmfile_path)
 
         # 调用处理逻辑
-        output_h5 = process_traceback(fasta_file_path, cmfile_path, cpu_cores)
+        output_url, progress_messages = process_traceback(fasta_file_path, cmfile_path, cpu_cores, user_id)
 
         # 返回处理结果
-        return jsonify({"output_file": output_h5})
+        return jsonify({"output_file": output_url, "progress_messages": progress_messages})
 
     except Exception as e:
         print(f"Error in handle_process_traceback: {str(e)}")

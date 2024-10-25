@@ -22,30 +22,40 @@ def wrapper_of_make_trsp_from_deriv_dict(doublet):
     return tr, ss, bp
 
 # memory saving code. slow...
-def make_onehot_of_cm_from_traceback(path_to_traceback, path_to_cmfile):
-
+def make_onehot_of_cm_from_traceback(path_to_traceback, path_to_cmfile, progress_messages):
     id_all = []
     with gzip.open(path_to_traceback, "rb") as tb:
         for line in tb:
             if line.startswith(b'>'):
                 id_all.append(line.replace(b">", b"").decode('utf-8'))
-    
-    n_size = len(id_all)
 
-    print(f"Start reading {path_to_traceback}...")
+    n_size = len(id_all)
+    progress_messages.append(f"Start reading {path_to_traceback}...")
+
     tbreader = TracebackFileReader(path_to_cmfile, path_to_traceback)
-    tbtext_all = [list(tbreader.traceback_iter())[0] for i in range(n_size)]
-    print(f"Start making tbtext")
-    tbdf_all = [tbreader._make_tbdf_from_tbtext(tbtext) for tbtext in tbtext_all]
-    print(f"Start making tbdict")
-    deriv_dict_all = [tbreader.make_aligned_tbdict_from_tbdf_ELinitCM(tbdf) for tbdf in tbdf_all]
+    tbtext_all = []
+    for i in range(n_size):
+        tbtext = list(tbreader.traceback_iter())[0]
+        tbtext_all.append(tbtext)
+    progress_messages.append(f"Start making tbtext")
+
+    tbdf_all = []
+    for tbtext in tbtext_all:
+        tbdf = tbreader._make_tbdf_from_tbtext(tbtext)
+        tbdf_all.append(tbdf)
+    progress_messages.append(f"Start making tbdict")
+
+    deriv_dict_all = []
+    for tbdf in tbdf_all:
+        deriv_dict = tbreader.make_aligned_tbdict_from_tbdf_ELinitCM(tbdf)
+        deriv_dict_all.append(deriv_dict)
 
     # infer data shape
     tr0, ss0, bp0 = wrapper_of_make_trsp_from_deriv_dict((path_to_cmfile, deriv_dict_all[0]))
 
     # writing datafile
     output_h5 = path_to_traceback.replace(".txt.gz", "") + f"_onehot_cm.h5"
-    print(f"Start writing {output_h5}...")
+    progress_messages.append(f"Start writing {output_h5}...")
     with h5py.File(output_h5, 'w') as datafile:
         datafile.create_dataset('id', (n_size, ), dtype=h5py.special_dtype(vlen=str))
         datafile.create_dataset('tr', (n_size, *tr0.shape))
@@ -58,7 +68,7 @@ def make_onehot_of_cm_from_traceback(path_to_traceback, path_to_cmfile):
             datafile["s"][i] = ss
             datafile["p"][i] = bp
             if i % 100 == 0:
-                print(f"seq {str(i)}")
+                progress_messages.append(f"seq {str(i)}")
 
     return output_h5
 
@@ -92,5 +102,6 @@ if __name__ == '__main__':
         path_to_traceback = args.traceback
 
     print(f"Loading {path_to_traceback}.")
-    output_h5 = make_onehot_of_cm_from_traceback(path_to_traceback, args.cmfile)
+    progress_messages = []
+    output_h5 = make_onehot_of_cm_from_traceback(path_to_traceback, args.cmfile, progress_messages)
     print(f"wrote\t\t: {output_h5}")
