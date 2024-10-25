@@ -2,6 +2,7 @@ import os
 import sys
 import importlib.util
 import gzip
+import h5py
 
 # 手动设置 infernal_tools 模块的文件路径
 infernal_tools_path = "src/infernal_tools.py"

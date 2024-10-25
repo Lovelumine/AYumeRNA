@@ -27,26 +27,7 @@ def download_file_from_minio(url, destination):
         print(f"Error during download: {e}")
         raise
 
-# 自定义路径转换函数
-def convert_to_wsl_path(win_path):
-    try:
-        # 替换盘符 (C: -> /mnt/c)
-        if win_path[1:3] == ':\\' or win_path[1:3] == ':/':
-            drive_letter = win_path[0].lower()
-            # 将反斜杠替换为正斜杠
-            win_path = win_path.replace('\\', '/')
-            wsl_path = f"/mnt/{drive_letter}{win_path[2:]}"
-        else:
-            # 如果不是绝对路径，仅替换反斜杠为正斜杠
-            wsl_path = win_path.replace('\\', '/')
-        
-        print(f"Converted {win_path} to WSL path: {wsl_path}")
-        return wsl_path
-    except Exception as e:
-        print(f"Error in manual path conversion: {e}")
-        raise
-
-# 调用 WSL 中的 cmalign 生成对齐文件和 traceback.txt
+# 调用 cmalign 生成对齐文件和 traceback.txt
 def run_cmalign(fasta_file, cmfile, cpu_cores=4):
     try:
         # 生成相关文件的名称
@@ -59,38 +40,28 @@ def run_cmalign(fasta_file, cmfile, cpu_cores=4):
         outstk_tmp = f"{basename}_notrunc_tmp.sto"
         outstk = f"{basename}_notrunc.sto"
 
-        # 将 Windows 路径转换为 WSL 路径
-        wsl_fasta_file = convert_to_wsl_path(fasta_file)
-        wsl_cmfile = convert_to_wsl_path(cmfile)
-        wsl_traceback_file = convert_to_wsl_path(traceback_file)
-        wsl_score_file = convert_to_wsl_path(score_file)
-        wsl_insertion_file = convert_to_wsl_path(insertion_file)
-        wsl_elstate_file = convert_to_wsl_path(elstate_file)
-        wsl_outstk_tmp = convert_to_wsl_path(outstk_tmp)
-        wsl_outstk = convert_to_wsl_path(outstk)
-
         # 调用 cmalign 生成 traceback 文件
         cmalign_cmd = (
-            f"wsl cmalign --cpu {cpu_cores} --notrunc --tfile {wsl_traceback_file} "
-            f"--sfile {wsl_score_file} --ifile {wsl_insertion_file} --elfile {wsl_elstate_file} "
-            f"{wsl_cmfile} {wsl_fasta_file} > {wsl_outstk_tmp}"
+            f"cmalign --cpu {cpu_cores} --notrunc --tfile {traceback_file} "
+            f"--sfile {score_file} --ifile {insertion_file} --elfile {elstate_file} "
+            f"{cmfile} {fasta_file} > {outstk_tmp}"
         )
         print(f"Running cmalign with command: {cmalign_cmd}")
         result = subprocess.run(cmalign_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        # 使用 errors='replace' 忽略解码错误
         print(f"cmalign output: {result.stdout.decode('utf-8', errors='replace')}")
         print(f"cmalign error (if any): {result.stderr.decode('utf-8', errors='replace')}")
         result.check_returncode()  # 检查命令是否执行成功
 
         # 压缩 traceback.txt 为 gzip 格式，强制覆盖已有文件 (-f)
-        print(f"Compressing {wsl_traceback_file} to {gz_traceback_file}")
-        result = subprocess.run(f"wsl gzip -f {wsl_traceback_file}", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        gzip_cmd = f"gzip -f {traceback_file}"
+        print(f"Compressing {traceback_file} to {gz_traceback_file}")
+        result = subprocess.run(gzip_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print(f"gzip output: {result.stdout.decode('utf-8', errors='replace')}")
         print(f"gzip error (if any): {result.stderr.decode('utf-8', errors='replace')}")
         result.check_returncode()
 
         # 使用 esl-reformat 进行 Stockholm 文件的重新格式化
-        esl_reformat_cmd = f"wsl /home/lovelumine/bin/esl-reformat --informat stockholm -o {wsl_outstk} stockholm {wsl_outstk_tmp}"
+        esl_reformat_cmd = f"/home/lovelumine/bin/esl-reformat --informat stockholm -o {outstk} stockholm {outstk_tmp}"
         print(f"Running esl-reformat with command: {esl_reformat_cmd}")
         result = subprocess.run(esl_reformat_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         print(f"esl-reformat output: {result.stdout.decode('utf-8', errors='replace')}")
@@ -98,8 +69,8 @@ def run_cmalign(fasta_file, cmfile, cpu_cores=4):
         result.check_returncode()
 
         # 删除临时的 sto 文件
-        print(f"Removing temporary file: {wsl_outstk_tmp}")
-        subprocess.run(f"wsl rm {wsl_outstk_tmp}", shell=True)
+        print(f"Removing temporary file: {outstk_tmp}")
+        os.remove(outstk_tmp)
 
         return gz_traceback_file
 
