@@ -1,10 +1,13 @@
 from flask import Flask
 from routes.traceback import traceback_bp
 from routes.split_onehot import split_onehot_bp
+from routes.generate_weight import generate_weight_bp
+
 
 app = Flask(__name__)
 
 # 注册蓝图
+app.register_blueprint(generate_weight_bp)
 app.register_blueprint(traceback_bp)
 app.register_blueprint(split_onehot_bp)
 
