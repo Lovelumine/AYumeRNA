@@ -93,10 +93,12 @@ def run_cmalign(fasta_file, cmfile, cpu_cores=4, progress_messages=[]):
         raise
 
 # 通用函数：上传文件到 MinIO
-def upload_to_minio(local_file_path, user_id, progress_messages=[]):
+def upload_to_minio(local_file_path, user_id, file_type='onehot', progress_messages=None):
+    if progress_messages is None:
+        progress_messages = []
     try:
         timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-        object_name = f"{user_id}-{timestamp}-onehot.h5"
+        object_name = f"{user_id}-{timestamp}-{file_type}.h5"
 
         # 确保存储桶存在
         found = minio_client.bucket_exists(MINIO_BUCKET_NAME)
@@ -118,3 +120,4 @@ def upload_to_minio(local_file_path, user_id, progress_messages=[]):
     except Exception as e:
         progress_messages.append(f"Error uploading file to MinIO: {str(e)}")
         raise
+
