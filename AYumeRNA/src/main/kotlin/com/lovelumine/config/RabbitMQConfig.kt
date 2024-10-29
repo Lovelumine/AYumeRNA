@@ -115,6 +115,25 @@ class RabbitMQConfig {
             .with("splitOnehotTasks")
     }
 
+    // 配置 generateWeightTasks 队列、交换机和绑定
+    @Bean
+    fun generateWeightTasksQueue(): Queue {
+        return QueueBuilder.durable("generateWeightTasks").build()
+    }
+
+    @Bean
+    fun generateWeightTasksExchange(): DirectExchange {
+        return ExchangeBuilder.directExchange("generateWeightTasksExchange").durable(true).build()
+    }
+
+    @Bean
+    fun generateWeightTasksBinding(): Binding {
+        return BindingBuilder.bind(generateWeightTasksQueue())
+            .to(generateWeightTasksExchange())
+            .with("generateWeightTasks")
+    }
+
+
     // 配置消息转换器，序列化和反序列化为 JSON 格式
     @Bean
     fun jackson2JsonMessageConverter(): Jackson2JsonMessageConverter {
