@@ -12,6 +12,7 @@ object RfamUtils {
         pathToRfamSeed: String,
         onDetailsUpdated: (foundSeq: Int, seedSeqCount: Int, retainedSeqCount: Int) -> Unit
     ): String {
+
         // 1. 去重操作
         val uniquedFastaPath = uniquenize(originalFilePath)
 
