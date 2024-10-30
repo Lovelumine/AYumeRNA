@@ -21,7 +21,7 @@ def handle_sample():
         config_url = data.get('config_url')
         ckpt_url = data.get('ckpt_url')
         cmfile_url = data.get('cmfile_url')
-        n_samples = int(data.get('n_samples', 1000))
+        n_samples = int(data.get('n_samples') or data.get('nSamples') or data.get('NSamples') or 100)
         user_id = str(data.get('user_id', 'unknown_user'))
         progress_messages = []
 
