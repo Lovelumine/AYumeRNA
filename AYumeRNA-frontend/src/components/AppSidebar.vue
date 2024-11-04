@@ -10,21 +10,29 @@
     <nav v-if="!props.isCollapsed">
       <ul>
         <li v-for="route in filteredRoutes" :key="route.path">
-          <router-link :to="route.path">{{ route.meta?.title || route.name }}</router-link>
-          <!-- 二级路由 -->
-          <ul v-if="route.children && route.children.length">
-            <li v-for="child in route.children" :key="child.path">
-              <router-link :to="child.path">{{ child.meta?.title || child.name }}</router-link>
-            </li>
-          </ul>
+          <router-link v-if="!route.children || !route.children.length" :to="route.path">
+            {{ route.meta?.title || route.name }}
+          </router-link>
+          <!-- 处理有子路由的情况 -->
+          <div v-else>
+            <button @click="toggleSubMenu(route.path)">
+              {{ isSubMenuOpen(route.path) ? '▼' : '▶' }} {{ route.meta?.title || route.name }}
+            </button>
+            <ul v-if="isSubMenuOpen(route.path)">
+              <li v-for="child in route.children" :key="child.path">
+                <router-link :to="`${route.path}/${child.path}`">{{ child.meta?.title || child.name }}</router-link>
+              </li>
+            </ul>
+          </div>
         </li>
       </ul>
     </nav>
   </aside>
 </template>
 
+
 <script setup lang="ts">
-import { computed, defineProps, defineEmits } from 'vue';
+import { computed, defineProps, defineEmits, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
@@ -35,13 +43,25 @@ library.add(faBars, faTimes);
 
 const props = defineProps<{ isCollapsed: boolean }>();
 const emit = defineEmits(['toggle']);
+const router = useRouter();
 
+// 存储子菜单的展开状态
+const subMenuOpen = ref<{ [key: string]: boolean }>({});
+
+// 切换侧边栏的展开状态
 function toggleSidebar() {
   emit('toggle');
 }
 
-// 获取路由对象
-const router = useRouter();
+// 切换子菜单的展开状态
+function toggleSubMenu(routePath: string) {
+  subMenuOpen.value[routePath] = !subMenuOpen.value[routePath];
+}
+
+// 检查子菜单是否展开
+function isSubMenuOpen(routePath: string) {
+  return !!subMenuOpen.value[routePath];
+}
 
 // 过滤出需要展示的一级和二级路由
 const filteredRoutes = computed(() =>
@@ -58,7 +78,7 @@ const filteredRoutes = computed(() =>
   display: flex;
   flex-direction: column;
   justify-content: start;
-  min-height: 100vh;
+  height: 100vh;
   position: fixed;
   top: 0;
   left: 0;
@@ -97,7 +117,7 @@ const filteredRoutes = computed(() =>
 }
 
 .toggle-btn:hover .icon {
-  transform: rotate(90deg); /* 添加旋转效果 */
+  transform: rotate(90deg);
 }
 
 .description {
@@ -115,6 +135,24 @@ nav ul {
 
 nav ul li {
   margin-bottom: 1em;
+}
+
+nav ul li button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  text-align: left;
+  font-size: 1em;
+  padding: 0.5em 1em;
+  display: block;
+  width: 100%;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+nav ul li button:hover {
+  background-color: #3a4a5a;
 }
 
 nav ul li a {

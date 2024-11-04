@@ -23,25 +23,37 @@ function toggleSidebar() {
 <style scoped>
 #app {
   display: flex;
-  min-height: 100vh;
+  min-height: 100vh; /* 确保填满视口高度 */
+  height: 100%;
+  top: 0;
+  left: 0;
+
 }
 
 /* 动态调整右侧内容区域的左边距 */
 .main-content {
-  flex: 1;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 200px; /* 左侧对齐到侧边栏的宽度 */
+  transition: left 0.3s ease; /* 在侧边栏收缩时调整宽度 */
   display: flex;
   flex-direction: column;
-  margin-left: 200px; /* 默认的侧边栏宽度 */
-  transition: margin-left 0.3s ease;
 }
 
+
 .main-content.collapsed {
-  margin-left: 50px; /* 收缩后的侧边栏宽度 */
+  left: 50px; /* 收缩后的侧边栏宽度 */
 }
+
 
 /* 内容区域样式 */
 .content {
   flex: 1;
-  padding: 2em;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>
