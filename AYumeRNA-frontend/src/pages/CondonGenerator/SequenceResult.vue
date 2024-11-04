@@ -2,6 +2,7 @@
   <div class="sequence-result">
     <h3>Generated tRNA Sequences</h3>
     <el-table :data="props.sequences" style="width: 100%">
+      <el-table-column type="selection" width="50"></el-table-column>
       <el-table-column prop="index" label="Index" width="80">
         <template #default="scope">
           {{ scope.$index + 1 }}
@@ -39,6 +40,8 @@ function goToAnalysis() {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   max-width: 800px;
   margin-top: 1.5em;
+  max-height: 400px; /* 限制最大高度 */
+  overflow-y: auto;  /* 启用垂直滚动 */
 }
 
 h3 {
@@ -47,7 +50,6 @@ h3 {
   margin-bottom: 0.5em;
 }
 
-/* Next Step Button */
 .analysis-btn {
   background-color: #4caf50;
   color: white;
