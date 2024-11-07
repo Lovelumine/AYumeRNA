@@ -7,6 +7,7 @@
       <option v-for="count in sequenceOptions" :key="count" :value="count">{{ count }}</option>
     </select>
     <button class="generate-btn" @click="generateSequence">Generate Sequences</button>
+    <p class="note">These generated sequences are sup-tRNA, capable of decoding stop codons. You can select and analyze the sequences in the table below.</p>
     <SequenceResult v-if="sequences.length" :sequences="sequences" />
   </div>
 </template>
@@ -21,7 +22,7 @@ const sequenceOptions = [10, 50, 100, 500, 1000]; // 生成的数量选项
 const sequences = ref<string[]>([]);
 
 function generateSequence() {
-  sequences.value = Array.from({ length: sequenceCount.value }, (_, i) => `Sequence ${i + 1}`);
+  sequences.value = Array.from({ length: sequenceCount.value }, (_, i) => `sup-tRNA Sequence ${i + 1}`);
 }
 </script>
 
@@ -65,5 +66,12 @@ h2 {
 
 .generate-btn:hover {
   background-color: #45a049;
+}
+
+.note {
+  font-size: 1.1em;
+  color: #555;
+  margin-top: 1em;
+  text-align: center;
 }
 </style>

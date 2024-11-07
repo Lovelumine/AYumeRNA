@@ -1,6 +1,6 @@
 <template>
   <div class="sequence-result">
-    <h3>Generated tRNA Sequences</h3>
+    <h3>Generated sup-tRNA Sequences</h3>
     <el-table :data="props.sequences" style="width: 100%">
       <el-table-column type="selection" width="50"></el-table-column>
       <el-table-column prop="index" label="Index" width="80">
@@ -14,6 +14,7 @@
         </template>
       </el-table-column>
     </el-table>
+    <p class="select-note">You can select sequences for further analysis. Use the checkbox to select or deselect sequences. </p>
     <button class="analysis-btn" @click="goToAnalysis">Next Step: Analysis</button>
   </div>
 </template>
@@ -26,8 +27,9 @@ import { ElTable, ElTableColumn } from 'element-plus';
 const props = defineProps<{ sequences: string[] }>();
 const router = useRouter();
 
+// 跳转到 /trex-score 路由
 function goToAnalysis() {
-  router.push({ name: 'ResultAnalysis' });
+  router.push({ name: 'TReXScore' });  // 修改为目标路由名称
 }
 </script>
 
@@ -48,6 +50,13 @@ h3 {
   color: #2c3e50;
   font-size: 1.5em;
   margin-bottom: 0.5em;
+}
+
+.select-note {
+  font-size: 1.1em;
+  color: #555;
+  margin-top: 1em;
+  text-align: center;
 }
 
 .analysis-btn {
