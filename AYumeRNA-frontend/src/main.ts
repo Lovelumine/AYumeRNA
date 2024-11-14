@@ -1,6 +1,7 @@
 import './styles/global.css'
 import STable from '@shene/table'
 import '@shene/table/dist/index.css'
+import 'bootstrap/dist/css/bootstrap.min.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'

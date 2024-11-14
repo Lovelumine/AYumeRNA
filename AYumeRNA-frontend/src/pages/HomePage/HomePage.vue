@@ -1,24 +1,59 @@
 <template>
   <div class="home">
-    <div class="intro-card">
-      <h1>Welcome to AYumeRNA</h1>
+    <!-- 介绍部分 -->
+    <div class="intro">
+      <h1>Welcome to <span class="highlight">AYumeRNA</span></h1>
       <p>The Ultimate Tool for Generating Stop Codon-Decoding Sup-tRNA Sequences</p>
       <router-link to="/generator">
         <button class="start-btn">Start Generating</button>
       </router-link>
     </div>
 
-    <div class="description-card">
-      <h2>AYumeRNA: Innovating tRNA with Stop Codon Decoding Capability</h2>
+    <!-- 描述部分 -->
+    <div class="description">
+      <h2><span class="highlight">AYumeRNA</span>: Innovating tRNA with Stop Codon Decoding Capability</h2>
       <p>
-        AYumeRNA, derived from "Aim Your Dream," is dedicated to enabling users to generate sup-tRNA sequences capable of decoding stop codons. This project allows users to generate tRNA sequences without prior knowledge of FASTA files or tRNA sequences. By simply specifying the desired amino acid, users can automatically generate the corresponding tRNA sequence, with a focus on stop codon decoding.
-        AYumeRNA supports the selection of different species and codons to meet specific experimental needs. During the sequence generation process, substitution or filtering methods are applied to ensure the validity and functionality of the sequences, particularly when it comes to decoding stop codons like UAA, UAG, and UGA.
+        <span class="highlight">AYumeRNA</span>, derived from "Aim Your Dream," is dedicated to enabling users to generate sup-tRNA sequences capable of decoding stop codons. This tool simplifies the process of designing tRNA sequences, even for those without prior knowledge of FASTA files or tRNA structures. Users can specify the desired amino acid and receive the corresponding tRNA sequence, tailored to decode stop codons such as UAA, UAG, and UGA.
       </p>
+      <p>
+        The project empowers scientists by automating the creation of <span class="highlight">sup-tRNA</span> sequences that decode stop codons. With features like amino acid customization, species selection, and codon adjustments, <span class="highlight">AYumeRNA</span> caters to various experimental setups. The backend implements advanced substitution and filtering methods, ensuring the generated sequences maintain biological functionality.
+      </p>
+      <div class="scg-container">
+        <!-- 使用 Font Awesome 图标 -->
+        <i class="fas fa-flask scg-icon"></i>
+        <p class="scg-description">
+          <span class="highlight">AYumeRNA</span> is designed to address the needs of the modern scientific community, allowing researchers to bypass complex manual sequence generation and focus on analyzing the sequences for critical research outcomes.
+        </p>
+      </div>
+
       <h3>Customizable Amino Acid Codon Generator</h3>
       <p>
-        AYumeRNA allows users to design custom codons, and the backend generates a series of tRNA sequences, scoring each to identify the optimal one. The project places special emphasis on secondary and tertiary structures and considers interactions with enzymes and aminoacyl-tRNA synthetases (ARS).
-        Furthermore, AYumeRNA integrates AlphaFold to study protein-binding affinities and R2DT for secondary structure prediction, enhancing the functionality of the generated sequences and expanding the research potential, especially in the context of stop codon skipping and misreading in translation.
+        <span class="highlight">AYumeRNA</span> allows users to design custom codons, generating a series of tRNA sequences. These sequences are evaluated and scored based on their efficiency in decoding specific stop codons. The tool integrates sophisticated structure prediction techniques, such as AlphaFold for tertiary structure and R2DT for secondary structure, to enhance sequence validity.
       </p>
+      <p>
+        Furthermore, <span class="highlight">AYumeRNA</span> considers protein-binding interactions and aminoacyl-tRNA synthetase (ARS) activity, ensuring that the generated tRNA sequences can effectively participate in translation processes. This integration of structural and functional analysis makes <span class="highlight">AYumeRNA</span> a robust tool for cutting-edge molecular biology research.
+      </p>
+
+      <h3>Using Tools like tRNAscan-SE for Sequence Validation</h3>
+      <p>
+        To ensure the validity and functionality of the generated tRNA sequences, <span class="highlight">AYumeRNA</span> integrates tools like <a href="https://lowelab.ucsc.edu/tRNAscan-SE/" target="_blank">tRNAscan-SE</a>. This tool is designed to scan known tRNA sequences and identify functional tRNA genes by analyzing their structural features.
+      </p>
+      <p>
+        After generating the tRNA sequences, the backend compares them with sequences derived from tRNAscan-SE to identify functional tRNAs in the natural world. By comparing these sequences with known functional tRNAs, <span class="highlight">AYumeRNA</span> can validate the generated sequences for their biological relevance and ensure that they meet the standards of real-world tRNA functionality.
+      </p>
+      <p>
+        This comparison and validation process enables the identification of potential errors and guarantees that the generated tRNA sequences align with natural, functional tRNAs. It also helps to eliminate sequences that are likely non-functional or unsuitable for specific applications, increasing the reliability of the tool.
+      </p>
+
+      <h3>Key Features</h3>
+      <ul class="features-list">
+        <li>Automated generation of sup-tRNA sequences</li>
+        <li>Customization options for amino acids, species, and codons</li>
+        <li>Advanced secondary and tertiary structure prediction</li>
+        <li>Integration with AlphaFold and R2DT for enhanced sequence analysis</li>
+        <li>Real-time scoring of generated sequences for functional optimization</li>
+        <li>Sequence validation through comparison with natural tRNAs using tRNAscan-SE</li>
+      </ul>
     </div>
   </div>
 </template>
@@ -32,39 +67,27 @@
 .home {
   display: flex;
   flex-direction: column;
-  align-items: center;
   padding: 2em;
   min-height: 100vh;
   background-color: #f4f8fb; /* 柔和的背景色 */
   width: 100%;
   box-sizing: border-box;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  overflow-y: auto;
 }
 
-/* 介绍卡片 */
-.intro-card {
-  background-color: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1); /* 更柔和的阴影效果 */
-  padding: 3em;
-  text-align: center;
+/* 介绍部分 */
+.intro {
+  text-align: center;  /* 居中对齐 */
   margin-bottom: 3em;
-  max-width: 600px;
   width: 100%;
-  transition: transform 0.3s ease;
 }
 
-.intro-card:hover {
-  transform: translateY(-5px); /* 鼠标悬停效果 */
-}
-
-.intro-card h1 {
-  font-size: 2.5em;
+.intro h1 {
+  font-size: 3em;
   color: #2c3e50;
 }
 
-.intro-card p {
+.intro p {
   font-size: 1.3em;
   color: #7b8b9a;
   margin: 1.5em 0;
@@ -87,35 +110,78 @@
   transform: scale(1.05); /* 按钮悬停放大效果 */
 }
 
-/* 描述卡片 */
-.description-card {
-  background-color: #ffffff;
-  border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-  padding: 3em;
-  text-align: left;
-  max-width: 800px;
+/* 描述部分 */
+.description {
+  text-align: left;  /* 左对齐 */
   width: 100%;
+  margin: 0;  /* 移除自动居中 */
 }
 
-.description-card h2 {
-  font-size: 2em;
+.description h2 {
+  font-size: 2.5em;
   color: #2c3e50;
   margin-bottom: 1.5em;
 }
 
-.description-card p {
+.description p {
   font-size: 1.1em;
   color: #555;
   line-height: 1.8;
   margin-bottom: 1.5em;
 }
 
-.description-card h3 {
+.description h3 {
   font-size: 1.7em;
   color: #3a4a5a;
   margin-top: 1.5em;
   margin-bottom: 1.2em;
+}
+
+.features-list {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.features-list li {
+  font-size: 1.1em;
+  color: #555;
+  margin-bottom: 1em;
+  padding-left: 20px;
+  position: relative;
+}
+
+.features-list li::before {
+  content: "✔";
+  color: #4caf50;
+  position: absolute;
+  left: 0;
+  font-size: 1.3em;
+  top: 0;
+}
+
+.scg-container {
+  display: flex;
+  align-items: center;
+  margin: 2em 0;
+}
+
+.scg-icon {
+  font-size: 3em;
+  color: #4caf50;
+  margin-right: 1em;
+}
+
+.scg-description {
+  font-size: 1.1em;
+  color: #555;
+  max-width: 700px;
+  line-height: 1.8;
+}
+
+/* 重点文字 */
+.highlight {
+  color: #e74c3c; /* 红色 */
+  font-weight: bold;
 }
 
 /* 响应式设计：适配小屏幕 */
@@ -124,20 +190,32 @@
     padding: 1.5em;
   }
 
-  .intro-card, .description-card {
-    padding: 2em;
+  .intro h1 {
+    font-size: 2.5em;
   }
 
-  .intro-card h1 {
-    font-size: 2em;
-  }
-
-  .intro-card p {
+  .intro p {
     font-size: 1.1em;
   }
 
   .start-btn {
     padding: 0.8em 1.8em;
+    font-size: 1em;
+  }
+
+  .description h2 {
+    font-size: 2em;
+  }
+
+  .description p {
+    font-size: 1em;
+  }
+
+  .description h3 {
+    font-size: 1.5em;
+  }
+
+  .features-list li {
     font-size: 1em;
   }
 }

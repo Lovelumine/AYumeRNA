@@ -1,48 +1,110 @@
 <template>
-  <div class="container">
-    <!-- 文字描述 -->
-    <p class="text-description">
-       tRNA sequence:
-      <span class="sequence">
-        GCGUUGGUGGUAUAGUGGUUAGCAUAGCUGCCUUCAAAGCAGUUGACCCGGGUUCGAUUCCCGGCCAACGCA
-      </span>
-    </p>
-    <!-- 图片 -->
-    <img src="./demo.png" alt="Demo Image" class="image" />
+  <div class="visualization-analysis">
+    <h2>tRNA Visualization Analysis</h2>
+    <p>In this section, you can view the predicted secondary and tertiary structures of tRNA sequences.</p>
+
+    <p><strong>Currently analyzing the following tRNA sequence:</strong></p>
+    <pre>{{ tRNASequence }}</pre>
+
+    <!-- Buttons for navigating to sub-pages -->
+    <div class="sub-pages">
+      <router-link to="/visualization/secondary-structure">
+        <button class="nav-btn secondary">View Secondary Structure Prediction (using tRNAscan-SE & R2DT)</button>
+      </router-link>
+      <router-link to="/visualization/tertiary-structure">
+        <button class="nav-btn tertiary">View Tertiary Structure Prediction (using AlphaFold 3)</button>
+      </router-link>
+    </div>
+
+    <!-- Render sub-routes -->
+    <router-view></router-view>
   </div>
 </template>
 
 <script setup lang="ts">
-// 这里可以添加 TypeScript 代码逻辑
+import { ref } from 'vue'
+
+// Mock data for tRNA sequence
+const tRNASequence = ref('GCGTTGGTGGTATAGTGGTtAGCATAGCTGCCTTCAAAGCAGTTGaCCCGGGTTCGATTCCCGGCCAACGCA')
 </script>
 
 <style scoped>
-/* 使用 flexbox 来居中内容 */
-.container {
-  display: flex;
-  flex-direction: column;  /* 使内容垂直排列 */
-  justify-content: center;
-  align-items: center;
-  height: 100vh; /* 使页面高度为视口的高度 */
-  margin: 0; /* 移除默认的页面边距 */
-  background-color: #f0f0f0; /* 设置背景颜色为淡灰色 */
-  text-align: center; /* 让文字居中 */
+.visualization-analysis {
+  padding: 30px;
+  max-width: 900px;
+  margin: 0 auto;
+  font-family: 'Arial', sans-serif;
 }
 
-.text-description {
-  font-size: 1.2em; /* 增加文字的大小 */
-  color: #333; /* 设置文字颜色 */
-  margin-bottom: 20px; /* 增加文字与图片的间距 */
+h2 {
+  font-size: 2.5em;
+  color: #2c3e50;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 20px;
 }
 
-.sequence {
-  font-weight: bold;  /* 让序列加粗 */
-  color: #0077cc; /* 让序列文字颜色为蓝色 */
+p {
+  font-size: 1.2em;
+  color: #333;
+  line-height: 1.6;
+  text-align: center;
 }
 
-.image {
-  max-width: 90%;  /* 控制图片最大宽度 */
-  max-height: 90%; /* 控制图片最大高度 */
-  object-fit: contain; /* 保持图片比例 */
+strong {
+  font-weight: bold;
+  color: #409eff;
+}
+
+pre {
+  background-color: #f4f4f4;
+  padding: 12px;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-size: 1.1em;
+  color: #333;
+  margin: 20px auto;
+  width: 100%;
+  max-width: 800px;
+}
+
+.sub-pages {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.nav-btn {
+  background-color: #409eff;
+  color: white;
+  font-size: 1.1em;
+  padding: 12px 20px;
+  border-radius: 6px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.3s ease;
+  margin: 10px 0;
+}
+
+.nav-btn:hover {
+  background-color: #66b1ff;
+  transform: scale(1.05);
+}
+
+.nav-btn.secondary {
+  background-color: #42b983;
+}
+
+.nav-btn.secondary:hover {
+  background-color: #61c28d;
+}
+
+.nav-btn.tertiary {
+  background-color: #f39c12;
+}
+
+.nav-btn.tertiary:hover {
+  background-color: #f1a10b;
 }
 </style>
