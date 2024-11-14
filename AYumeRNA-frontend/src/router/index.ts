@@ -5,6 +5,7 @@ import TReXScore from '../pages/TReXScore/TReXScore.vue' // tREX评分组件
 import VisualizationAnalysis from '../pages/ResultAnalysis/VisualizationAnalysis.vue' // 可视化分析组件
 import SecondaryStructure from '../pages/ResultAnalysis/SecondaryStructure/SecondaryStructure.vue' // 二级结构预测组件
 import TertiaryStructure from '../pages/ResultAnalysis/TertiaryStructure/TertiaryStructure.vue' // 三级结构预测组件
+import SequenceVerification from '../pages/SequenceVerification/SequenceVerification.vue' // 序列验证组件
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -30,6 +31,15 @@ const routes = [
         component: TertiaryStructure,
       },
     ],
+  },
+  {
+    path: '/sequence-verification', // 新增的序列验证页面路由
+    name: 'SequenceVerification',
+    component: SequenceVerification,
+    meta: {
+      description:
+        'Compare generated tRNA sequences with natural tRNA sequences for verification using tRNAscan-SE tool.', // 为页面添加描述
+    },
   },
 ]
 

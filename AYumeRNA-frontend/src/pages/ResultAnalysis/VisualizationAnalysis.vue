@@ -31,7 +31,6 @@ const tRNASequence = ref('GCGTTGGTGGTATAGTGGTtAGCATAGCTGCCTTCAAAGCAGTTGaCCCGGGTT
 <style scoped>
 .visualization-analysis {
   padding: 30px;
-  max-width: 900px;
   margin: 0 auto;
   font-family: 'Arial', sans-serif;
 }

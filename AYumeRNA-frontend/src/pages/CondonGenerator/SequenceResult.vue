@@ -40,10 +40,9 @@ function goToAnalysis() {
   padding: 1.5em;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  max-width: 800px;
+  max-width: 100%;
   margin-top: 1.5em;
-  max-height: 400px; /* 限制最大高度 */
-  overflow-y: auto;  /* 启用垂直滚动 */
+  width: 100%;
 }
 
 h3 {

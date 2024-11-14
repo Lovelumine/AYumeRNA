@@ -86,7 +86,6 @@ onMounted(() => {
   }
 });
 
-
 // 下载 FASTA 序列
 const downloadSequence = () => {
   const fastaContent = `>${tRNAInfo.value.name}\n${tRNAInfo.value.sequence}`;
@@ -103,16 +102,17 @@ const downloadSequence = () => {
 <style scoped>
 .secondary-structure {
   padding: 30px;
-  max-width: 900px;
+  width: 100%;
+
   margin: 0 auto;
   font-family: 'Arial', sans-serif;
+  text-align: left;
 }
 
 h2 {
   font-size: 2.5em;
   color: #2c3e50;
   font-weight: bold;
-  text-align: center;
   margin-bottom: 20px;
 }
 
@@ -151,9 +151,8 @@ pre {
   word-wrap: break-word;
   font-size: 1.1em;
   color: #333;
-  margin: 20px auto;
+  margin: 20px 0;
   width: 100%;
-  max-width: 800px;
 }
 
 .forna-container {
@@ -162,7 +161,6 @@ pre {
   background-color: #f9f9f9;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  text-align: center;
 }
 
 .forna-view {
