@@ -2224,6 +2224,7 @@ export function FornaContainer(element, passedOptions = {}) {
 
   self.addRNA = function (structure, passedOptions = {}) {
     let rnaJson = createInitialLayout(structure, passedOptions)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let centerView = false
 
     /*

@@ -1,4 +1,3 @@
-// SampleController.kt
 package com.lovelumine.sample.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -21,6 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 import java.io.ByteArrayInputStream
+import java.net.URI
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -50,9 +50,12 @@ class SampleController(
     )
     @PostMapping("/process")
     fun processSampleTask(
-        @RequestParam("config_file") configFile: MultipartFile,
-        @RequestParam("ckpt_file") ckptFile: MultipartFile,
-        @RequestParam("cm_file") cmFile: MultipartFile,
+        @RequestParam("config_file") configFile: MultipartFile?,
+        @RequestParam("ckpt_file") ckptFile: MultipartFile?,
+        @RequestParam("cm_file") cmFile: MultipartFile?,
+        @RequestParam("config_file_url") configFileUrl: String?,
+        @RequestParam("ckpt_file_url") ckptFileUrl: String?,
+        @RequestParam("cm_file_url") cmFileUrl: String?,
         @RequestParam("n_samples") nSamples: Int
     ): ResponseEntity<Map<String, Any>> {
         val user: User = try {
@@ -64,26 +67,42 @@ class SampleController(
 
         val userId = user.id
 
-        // 检查所有文件是否上传成功
-        if (configFile.isEmpty || ckptFile.isEmpty || cmFile.isEmpty) {
-            logger.error("必需的文件未上传或为空")
-            val errorData = mapOf("message" to "所有文件（config_file, ckpt_file, cm_file）必须上传且不能为空")
+        // 检查文件上传或文件 URL 提供的有效性
+        if ((configFile == null && configFileUrl.isNullOrBlank()) ||
+            (ckptFile == null && ckptFileUrl.isNullOrBlank()) ||
+            (cmFile == null && cmFileUrl.isNullOrBlank())) {
+            logger.error("必须提供至少一个文件或文件的 URL")
+            val errorData = mapOf("message" to "至少需要提供一个文件或文件的 URL")
             return ResponseEntity.status(400).body(ResponseUtil.formatResponse(400, errorData))
         }
 
-        // 上传文件到 MinIO
+        // 上传文件到 MinIO 或使用 URL
         val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
 
-        val configFileUrl = uploadToMinio(configFile, "config.yaml", userId, timestamp)
-        val ckptFileUrl = uploadToMinio(ckptFile, "model.pt", userId, timestamp)
-        val cmFileUrl = uploadToMinio(cmFile, "model.cm", userId, timestamp)
+        val configFileUrlFinal = if (configFile != null) {
+            uploadToMinio(configFile, "config.yaml", userId, timestamp)
+        } else {
+            verifyAndUseFileUrl(configFileUrl!!, "config.yaml")
+        }
+
+        val ckptFileUrlFinal = if (ckptFile != null) {
+            uploadToMinio(ckptFile, "model.pt", userId, timestamp)
+        } else {
+            verifyAndUseFileUrl(ckptFileUrl!!, "model.pt")
+        }
+
+        val cmFileUrlFinal = if (cmFile != null) {
+            uploadToMinio(cmFile, "model.cm", userId, timestamp)
+        } else {
+            verifyAndUseFileUrl(cmFileUrl!!, "model.cm")
+        }
 
         // 创建任务对象，包含 MinIO 文件的 URL 和其他参数
         val task = SampleTask(
             userId = userId,
-            configFileUrl = configFileUrl,
-            ckptFileUrl = ckptFileUrl,
-            cmFileUrl = cmFileUrl,
+            configFileUrl = configFileUrlFinal,
+            ckptFileUrl = ckptFileUrlFinal,
+            cmFileUrl = cmFileUrlFinal,
             n_samples = nSamples
         )
 
@@ -95,10 +114,11 @@ class SampleController(
         logger.info("采样任务的 JSON 表示: $taskJson")
 
         // 检查是否有空字段
-        if (configFileUrl.isBlank() || ckptFileUrl.isBlank() || cmFileUrl.isBlank()) {
+        if (configFileUrlFinal.isBlank() || ckptFileUrlFinal.isBlank() || cmFileUrlFinal.isBlank()) {
             logger.error("采样任务发送失败：必填字段为空")
             messagingTemplate.convertAndSend("/topic/progress/$userId", "采样任务发送失败：请检查文件上传是否完整")
             return ResponseEntity.status(400).body(ResponseUtil.formatResponse(400, mapOf("message" to "必填字段为空，采样任务未发送")))
+
         }
 
         // 将任务发送到 RabbitMQ 队列
@@ -143,4 +163,20 @@ class SampleController(
         }
     }
 
+    // 检查并使用文件 URL（必须是有效的 MinIO 链接）
+    private fun verifyAndUseFileUrl(fileUrl: String, fileName: String): String {
+        return try {
+            // 替换 URL 构造方法，避免使用已弃用的构造函数
+            val url = URI(fileUrl).toURL()
+            if (url.protocol != "http" && url.protocol != "https") {
+                throw IllegalArgumentException("无效的 URL 协议")
+            }
+            val fileUrlFinal = "$minioBaseUrl/$bucketName/$fileName"
+            logger.info("文件链接有效：$fileName -> $fileUrlFinal")
+            fileUrlFinal
+        } catch (e: Exception) {
+            logger.error("无效的文件 URL: $fileUrl", e)
+            throw IllegalArgumentException("无效的文件 URL，请检查链接")
+        }
+    }
 }
