@@ -4,7 +4,8 @@
       <i class="fa fa-flask" aria-hidden="true"></i> Custom Amino Acid Codon Generator
     </h2>
 
-    <CodonInput />
+    <!-- 引入 CodonInput 组件 -->
+    <CodonInput @updateModel="updateModel" />
 
     <div class="reverse-codon-selection">
       <label for="reverse-codon">Select Reverse Codon:</label>
@@ -30,6 +31,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import axios from 'axios'; // 用于发送请求
 import CodonInput from './CodonInput.vue';
 import SequenceResult from './SequenceResult.vue';
 
@@ -39,10 +41,37 @@ const sequences = ref<string[]>([]);
 const reverseCodons = ref(['TAA', 'TAG', 'TGA']); // 反密码子的选项
 const selectedReverseCodon = ref(reverseCodons.value[0]);
 
-function generateSequence() {
-  sequences.value = Array.from({ length: sequenceCount.value }, (_, i) => {
-    return `sup-tRNA Sequence ${i + 1} for reverse codon ${selectedReverseCodon.value}`;
-  });
+// 模型名称（从 CodonInput.vue 更新）
+const selectedModel = ref('');
+
+// 更新模型名称的方法
+function updateModel(modelName: string) {
+  console.log('Received modelName in parent:', modelName); // 检查是否收到模型名称
+  selectedModel.value = modelName;
+}
+
+// 生成序列并发送请求
+async function generateSequence() {
+  try {
+    // 请求数据
+    const payload = {
+      model: selectedModel.value,
+      reverseCodon: selectedReverseCodon.value,
+      sequenceCount: sequenceCount.value,
+    };
+
+    // 打印调试信息
+    console.log('Sending request to /sample with payload:', payload);
+
+    // 发送 POST 请求到 /sample
+    const response = await axios.post('/sample', payload);
+
+    // 从服务器响应中更新序列
+    sequences.value = response.data.sequences || [];
+    console.log('Response:', response.data);
+  } catch (error) {
+    console.error('Error generating sequences:', error);
+  }
 }
 </script>
 
