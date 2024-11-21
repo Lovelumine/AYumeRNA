@@ -28,6 +28,9 @@ class SecurityConfig(
                     "/v3/api-docs",
                     "/v3/api-docs/swagger-config",
                     "/swagger-ui.html",
+                    "sample",
+                    "sample/*",
+                    "sample/process",
                     "/doc.html"
                 ).permitAll()
                 it.requestMatchers(

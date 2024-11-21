@@ -6,55 +6,45 @@
       The tREX score helps to assess the quality of the sequences based on their similarity to template sequences.
     </p>
 
-    <!-- tREX 评分公式 -->
-    <div class="score-explanation">
-      <h3 class="sub-title">tREX Score Formula</h3>
-      <p>
-        The tREX score evaluates the conservation of nucleotide positions between a test sequence and a template sequence.
-        It is calculated in two steps: first by comparing the conserved positions, and then by normalizing the score to ensure comparability across sequences.
-      </p>
-
-      <!-- 公式解释 -->
-      <p><strong>Step 1: Score Calculation</strong></p>
-      <pre>
-        tREX Score = (Conserved Positions) / (Total Positions)
-      </pre>
-      <p>
-        The numerator represents the number of conserved positions, and the denominator represents the total number of positions being compared between the test and template sequences.
-      </p>
-
-      <p><strong>Step 2: Normalization</strong></p>
-      <pre>
-        Normalized tREX Score = (tREX Score - Min Score) / (Max Score - Min Score)
-      </pre>
-      <p>
-        This normalization step ensures that all sequences' scores are within the same range, typically between 0 and 1, making it easier to compare sequences.
-      </p>
-
-      <p><strong>Note:</strong> A higher tREX score indicates a more reliable sequence that closely matches the template sequence.
-      </p>
-    </div>
-
     <!-- 使用 TableWithAction 组件 -->
-    <TableWithAction :data-source="mockScores" />
+    <TableWithAction :data-source="sequences" />
   </div>
 </template>
 
 <script setup lang="ts">
 import TableWithAction from './TableWithAction'; // 引入 TableWithAction 组件
+import { ref, onMounted } from 'vue';
 
-const mockScores = [
-  { sequence: 'AUGGCUACGUGCGCUACG', trexScore: 0.85 },
-  { sequence: 'GGCUAGGCUAUGCAGCGA', trexScore: 0.45 },
-  { sequence: 'UUAGCUAGGCUAGGUCUA', trexScore: -0.23 },
-  { sequence: 'ACGUGCCUAGCUAGCUUA', trexScore: 0.78 },
-  { sequence: 'UAGGCUAGCUAUGCCAGC', trexScore: 0.12 },
-  { sequence: 'UAGCUAGCUUAGCGUAGC', trexScore: -0.56 },
-  { sequence: 'AACGUCUAGCUAUGGCAA', trexScore: 0.91 },
-  { sequence: 'GCAUCGUGGCUAGCUCGG', trexScore: -0.34 },
-  { sequence: 'UAGCAGUAGCGCGAGGCA', trexScore: 0.33 },
-  { sequence: 'UCUAGCGAUAGCCGACUG', trexScore: 0.67 },
-];
+// 用于存储从 localStorage 读取的序列数据
+const sequences = ref<{ sequence: string; trexScore: number | null }[]>([]);
+
+// 从 localStorage 读取数据并赋值给 sequences
+onMounted(() => {
+  console.log('Attempting to load sequences from localStorage...');
+
+  // 尝试读取 localStorage 中的数据
+  const savedSequences = localStorage.getItem('sequences');
+  console.log('Saved sequences from localStorage:', savedSequences);
+
+  if (savedSequences) {
+    try {
+      const parsedSequences = JSON.parse(savedSequences);
+      console.log('Parsed sequences:', parsedSequences);
+
+      // 假设本地存储的数据已经是符合结构的
+      sequences.value = parsedSequences.map((seq: { sequence: string }) => ({
+        sequence: seq.sequence,
+        trexScore: null, // 初始时不计算分数，可以在后续更新
+      }));
+
+      console.log('Sequences loaded and mapped:', sequences.value);
+    } catch (error) {
+      console.error('Error parsing sequences from localStorage:', error);
+    }
+  } else {
+    console.warn('No sequences found in localStorage.');
+  }
+});
 </script>
 
 <style scoped>

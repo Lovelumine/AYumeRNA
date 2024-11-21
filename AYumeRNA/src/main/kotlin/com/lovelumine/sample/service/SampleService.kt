@@ -21,23 +21,23 @@ class SampleService(
         val userId = task.userId
 
         try {
-            // 通知进度
-            messagingTemplate.convertAndSend("/topic/progress/$userId", "进度：5% - 准备处理采样任务...")
+            // Notify progress
+            messagingTemplate.convertAndSend("/topic/progress/$userId", "Progress: 5% - Preparing to process sampling task...")
 
-            // 调用工具处理任务
+            // Call utility to process the task
             val (outputFileUrl, progressMessages) = SampleUtils.processSample(task, flaskApiUrl)
 
-            // 发送进度消息
+            // Send progress messages
             for (message in progressMessages) {
                 messagingTemplate.convertAndSend("/topic/progress/$userId", message)
             }
 
-            // 通知用户任务完成
-            messagingTemplate.convertAndSend("/topic/progress/$userId", "采样任务完成，结果已上传：$outputFileUrl")
+            // Notify user that the task is complete
+            messagingTemplate.convertAndSend("/topic/progress/$userId", "Sampling task completed, result uploaded: $outputFileUrl")
 
         } catch (e: Exception) {
-            logger.error("采样任务处理失败：${e.message}", e)
-            messagingTemplate.convertAndSend("/topic/progress/$userId", "采样任务失败：${e.message}")
+            logger.error("Sampling task processing failed: ${e.message}", e)
+            messagingTemplate.convertAndSend("/topic/progress/$userId", "Sampling task failed: ${e.message}")
         }
     }
 }

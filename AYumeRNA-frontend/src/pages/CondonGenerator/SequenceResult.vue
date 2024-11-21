@@ -5,8 +5,6 @@
     <!-- 初始任务提交信息 -->
     <p v-if="statusMessage">{{ statusMessage }}</p>
 
-
-
     <!-- 最终结果展示 -->
     <p v-if="resultUrl">
       Sampling task completed! The result is available.
@@ -14,7 +12,6 @@
     </p>
 
     <el-table v-if="sequences.length" :data="sequences" style="width: 100%">
-      <el-table-column type="selection" width="50"></el-table-column>
       <el-table-column prop="index" label="Index" width="80">
         <template #default="scope">
           {{ scope.$index + 1 }}
@@ -27,7 +24,7 @@
       </el-table-column>
     </el-table>
 
-    <p class="select-note" v-if="sequences.length">You can select sequences for further analysis. Use the checkbox to select or deselect sequences.</p>
+    <p class="select-note" v-if="sequences.length">The sequences are ready for analysis.</p>
     <button v-if="sequences.length" class="analysis-btn" @click="goToAnalysis">Next Step: Analysis</button>
   </div>
 </template>
@@ -38,10 +35,16 @@ import { useRouter } from 'vue-router';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
+// 定义 Sequence 类型
+type Sequence = {
+  index: number;
+  sequence: string;
+};
+
 const statusMessage = ref<string>('');  // 显示任务状态消息
 const progress = ref<string>('');  // 显示采样进度
 const resultUrl = ref<string>('');  // 显示最终结果的 URL
-const sequences = ref<{ index: number, sequence: string }[]>([]);  // 存储生成的序列
+const sequences = ref<Sequence[]>([]);  // 存储生成的序列
 const router = useRouter();
 
 // 假设你已经接收到服务器返回的 `subscribeUrl`
@@ -122,16 +125,19 @@ async function downloadAndParseFile() {
     // 更新序列数据
     sequences.value = parsedSequences;
     console.log('Sequences parsed and updated:', sequences.value);
+
+    // 自动保存所有序列到 localStorage
+    saveSequencesToLocalStorage();
   } catch (error) {
     console.error('Error downloading or parsing the FA file:', error);
   }
 }
 
 // 解析FASTA文件格式
-function parseFastaFile(fileContent: string): { index: number, sequence: string }[] {
+function parseFastaFile(fileContent: string): Sequence[] {
   console.log('Parsing FA file content:', fileContent); // 打印文件内容
   const lines = fileContent.split('\n');
-  const sequences = [];
+  const sequences: Sequence[] = [];
   let currentSequence = '';
 
   lines.forEach((line) => {
@@ -156,8 +162,23 @@ function parseFastaFile(fileContent: string): { index: number, sequence: string 
   return sequences;
 }
 
+// 保存所有序列到 localStorage
+function saveSequencesToLocalStorage() {
+  console.log('Saving all sequences to localStorage:', sequences.value);
+  localStorage.setItem('sequences', JSON.stringify(sequences.value));
+}
+
 // 跳转到分析页面
 function goToAnalysis() {
+  // 在点击分析时保存当前的序列
+  console.log('Saving all sequences before navigation:', sequences.value);
+
+  const sequencesJson = JSON.stringify(sequences.value);
+  localStorage.setItem('sequences', sequencesJson);
+
+  // 打印出保存的序列内容，确保存储成功
+  console.log('All sequences saved to localStorage:', sequencesJson);
+
   console.log('Navigating to analysis page');
   router.push({ name: 'TReXScore' });
 }
