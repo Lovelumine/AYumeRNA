@@ -1,7 +1,19 @@
 <template>
   <div class="sequence-result">
-    <h3>Generated sup-tRNA Sequences</h3>
-    <el-table :data="props.sequences" style="width: 100%">
+    <h3>Sampling Task Status</h3>
+
+    <!-- 初始任务提交信息 -->
+    <p v-if="statusMessage">{{ statusMessage }}</p>
+
+
+
+    <!-- 最终结果展示 -->
+    <p v-if="resultUrl">
+      Sampling task completed! The result is available.
+      <a :href="resultUrl" target="_blank" @click.prevent="downloadAndParseFile">Click to download the result</a>
+    </p>
+
+    <el-table v-if="sequences.length" :data="sequences" style="width: 100%">
       <el-table-column type="selection" width="50"></el-table-column>
       <el-table-column prop="index" label="Index" width="80">
         <template #default="scope">
@@ -10,26 +22,144 @@
       </el-table-column>
       <el-table-column prop="sequence" label="Sequence">
         <template #default="scope">
-          {{ scope.row }}
+          {{ scope.row.sequence }}
         </template>
       </el-table-column>
     </el-table>
-    <p class="select-note">You can select sequences for further analysis. Use the checkbox to select or deselect sequences. </p>
-    <button class="analysis-btn" @click="goToAnalysis">Next Step: Analysis</button>
+
+    <p class="select-note" v-if="sequences.length">You can select sequences for further analysis. Use the checkbox to select or deselect sequences.</p>
+    <button v-if="sequences.length" class="analysis-btn" @click="goToAnalysis">Next Step: Analysis</button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { defineProps } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
-import { ElTable, ElTableColumn } from 'element-plus';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 
-const props = defineProps<{ sequences: string[] }>();
+const statusMessage = ref<string>('');  // 显示任务状态消息
+const progress = ref<string>('');  // 显示采样进度
+const resultUrl = ref<string>('');  // 显示最终结果的 URL
+const sequences = ref<{ index: number, sequence: string }[]>([]);  // 存储生成的序列
 const router = useRouter();
 
-// 跳转到 /trex-score 路由
+// 假设你已经接收到服务器返回的 `subscribeUrl`
+const subscribeUrl = '/topic/progress/1';
+
+// WebSocket 连接和订阅进度
+onMounted(() => {
+  console.log('Attempting to connect to WebSocket...');
+  const socket = new SockJS('/sockjs/ws');  // 替换为实际的 WebSocket URL
+  const stompClient = new Client({
+    webSocketFactory: () => socket,
+    onConnect: () => {
+      console.log('WebSocket connected successfully');
+      stompClient.subscribe(subscribeUrl, (msg) => {
+        const messageBody = msg.body;
+        console.log('Received message:', messageBody);
+
+        // 直接作为文本显示，不进行任何解析
+        statusMessage.value = messageBody;
+        console.log('Status message updated:', statusMessage.value);
+
+        // 更新进度信息
+        if (messageBody.includes('Progress')) {
+          progress.value = messageBody; // 显示进度
+          console.log('Progress updated:', progress.value); // 打印进度
+        }
+
+        // 如果任务完成，检测结果 URL 并自动下载文件
+        if (messageBody.includes('Sampling task completed')) {
+          // 提取结果的 URL
+          const match = messageBody.match(/result uploaded: (\S+)/);
+          if (match) {
+            resultUrl.value = match[1]; // 提取 URL
+            console.log('Result URL detected:', resultUrl.value); // 打印结果链接
+            // 自动下载并解析 FA 文件
+            downloadAndParseFile();
+          } else {
+            console.error('No result URL found in message:', messageBody);
+          }
+        }
+
+        // 强制视图更新，确保所有数据都被渲染
+        nextTick(() => {
+          console.log('Next tick completed, data should be updated.');
+        });
+      });
+    },
+    onStompError: (error) => {
+      console.error('STOMP Error:', error);
+    },
+    onWebSocketClose: () => {
+      console.log('WebSocket connection closed');
+    },
+    onWebSocketError: (error) => {
+      console.error('WebSocket Error:', error);
+    },
+  });
+
+  stompClient.activate();
+});
+
+// 下载并解析FA文件
+async function downloadAndParseFile() {
+  if (!resultUrl.value) {
+    console.log('No result URL found, skipping file download.');
+    return;
+  }
+
+  console.log('Attempting to download file from URL:', resultUrl.value);
+  try {
+    const response = await fetch(resultUrl.value);
+    const text = await response.text();
+    console.log('File downloaded successfully, parsing content.');
+
+    // 解析 .fa 文件格式
+    const parsedSequences = parseFastaFile(text);
+
+    // 更新序列数据
+    sequences.value = parsedSequences;
+    console.log('Sequences parsed and updated:', sequences.value);
+  } catch (error) {
+    console.error('Error downloading or parsing the FA file:', error);
+  }
+}
+
+// 解析FASTA文件格式
+function parseFastaFile(fileContent: string): { index: number, sequence: string }[] {
+  console.log('Parsing FA file content:', fileContent); // 打印文件内容
+  const lines = fileContent.split('\n');
+  const sequences = [];
+  let currentSequence = '';
+
+  lines.forEach((line) => {
+    if (line.startsWith('>')) {
+      // 如果已有序列，保存它
+      if (currentSequence) {
+        sequences.push({ index: sequences.length + 1, sequence: currentSequence });
+      }
+      // 开始新序列
+      currentSequence = '';
+    } else {
+      // 添加到当前序列
+      currentSequence += line.trim();
+    }
+  });
+
+  // 保存最后一个序列
+  if (currentSequence) {
+    sequences.push({ index: sequences.length + 1, sequence: currentSequence });
+  }
+
+  return sequences;
+}
+
+// 跳转到分析页面
 function goToAnalysis() {
-  router.push({ name: 'TReXScore' });  // 修改为目标路由名称
+  console.log('Navigating to analysis page');
+  router.push({ name: 'TReXScore' });
 }
 </script>
 
@@ -49,6 +179,12 @@ h3 {
   color: #2c3e50;
   font-size: 1.5em;
   margin-bottom: 0.5em;
+}
+
+.progress-info {
+  font-size: 1.1em;
+  color: #4caf50;
+  margin-top: 1em;
 }
 
 .select-note {

@@ -25,7 +25,7 @@
     <button class="generate-btn" @click="generateSequence">Generate Sequences</button>
     <p class="note">These generated sequences are sup-tRNA, capable of decoding stop codons. You can select and analyze the sequences in the table below.</p>
 
-    <SequenceResult v-if="sequences.length" :sequences="sequences" />
+    <SequenceResult />
   </div>
 </template>
 
@@ -53,18 +53,21 @@ function updateModel(modelName: string) {
 // 生成序列并发送请求
 async function generateSequence() {
   try {
-    // 请求数据
-    const payload = {
-      model: selectedModel.value,
-      reverseCodon: selectedReverseCodon.value,
-      sequenceCount: sequenceCount.value,
-    };
+    // 使用 URLSearchParams 创建 x-www-form-urlencoded 格式的参数
+    const params = new URLSearchParams();
+    params.append('model', selectedModel.value);
+    params.append('reverseCodon', selectedReverseCodon.value);
+    params.append('sequenceCount', sequenceCount.value.toString());
 
     // 打印调试信息
-    console.log('Sending request to /sample with payload:', payload);
+    console.log('Sending request to /sample with params:', params.toString());
 
     // 发送 POST 请求到 /sample
-    const response = await axios.post('/sample', payload);
+    const response = await axios.post('/sample/process', params, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
 
     // 从服务器响应中更新序列
     sequences.value = response.data.sequences || [];
