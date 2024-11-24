@@ -1,12 +1,12 @@
 package com.lovelumine.tREX.controller
 
-import com.lovelumine.auth.model.User
 import com.lovelumine.common.ResponseUtil
 import com.lovelumine.tREX.model.SequenceTask
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
-import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 
@@ -16,27 +16,51 @@ class SequenceController(
     @Autowired private val rabbitTemplate: RabbitTemplate
 ) {
 
+    // 文件路径映射表
+    private val filePaths = mapOf(
+        "Phenylalanine_Bacteria_TAA" to "https://minio.lumoxuan.cn/ayumerna/model/Thr序列.csv",
+    )
+
+    private val httpClient = OkHttpClient() // 创建 HTTP 客户端
+
     @PostMapping("/process")
     fun processSequence(
-        @RequestParam("templateFile") templateFile: MultipartFile,
+        @RequestParam("aminoAcid") aminoAcid: String,
+        @RequestParam("domain") domain: String,
+        @RequestParam("reverseCodon") reverseCodon: String,
         @RequestParam("testFile") testFile: MultipartFile
     ): ResponseEntity<Map<String, Any>> {
-        // 捕获无效的用户认证信息
-        val user: User
-        try {
-            user = SecurityContextHolder.getContext().authentication.principal as User
-        } catch (e: Exception) {
-            val errorData = mapOf("message" to "无效的 Token 或用户未认证", "error" to e.localizedMessage)
-            return ResponseEntity.status(401).body(ResponseUtil.formatResponse(401, errorData))
+        // 模拟用户信息
+        val userId: Long = 1
+        val username: String = "lovelumine"
+
+        // 构造映射键
+        val key = "${aminoAcid}_${domain}_${reverseCodon}"
+        val templateFileUrl = filePaths[key] ?: run {
+            // 如果未找到映射，返回 400 错误
+            val errorMessage = "未找到对应的模板文件映射，请检查输入参数"
+            return ResponseEntity.status(400).body(ResponseUtil.formatResponse(400, mapOf("message" to errorMessage)))
         }
 
-        val userId = user.id
+        // 下载模板文件内容
+        val templateFileContent = try {
+            downloadFileContent(templateFileUrl)
+        } catch (e: Exception) {
+            val errorMessage = "无法下载模板文件，请检查文件路径：$templateFileUrl"
+            return ResponseEntity.status(500).body(ResponseUtil.formatResponse(500, mapOf("message" to errorMessage)))
+        }
+
+        // 校验上传文件是否为空
+        if (testFile.isEmpty) {
+            val errorMessage = "上传的测试文件不能为空，请上传有效文件"
+            return ResponseEntity.status(400).body(ResponseUtil.formatResponse(400, mapOf("message" to errorMessage)))
+        }
 
         // 创建任务对象
         val task = SequenceTask(
             userId = userId,
-            username = user.username,
-            templateFileData = templateFile.bytes,
+            username = username,
+            templateFileData = templateFileContent,
             testFileData = testFile.bytes
         )
 
@@ -46,5 +70,19 @@ class SequenceController(
         return ResponseEntity.ok(
             ResponseUtil.formatResponse(200, "任务已提交，正在排队处理")
         )
+    }
+
+    // 使用 OkHttp 从远程 URL 下载文件内容
+    private fun downloadFileContent(fileUrl: String): ByteArray {
+        val request = Request.Builder()
+            .url(fileUrl)
+            .build()
+
+        httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                throw RuntimeException("Failed to download file: ${response.message}")
+            }
+            return response.body?.bytes() ?: throw RuntimeException("File content is empty")
+        }
     }
 }

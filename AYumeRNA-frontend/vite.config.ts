@@ -43,6 +43,11 @@ export default defineConfig({
         ws: true, // 启用 WebSocket 代理
         changeOrigin: true, // 修改请求头中的 Origin 字段
       },
+      '/sequence/process': {
+        target: 'http://127.0.0.1:36243', // 后端 WebSocket 服务地址
+        ws: true, // 启用 WebSocket 代理
+        changeOrigin: true, // 修改请求头中的 Origin 字段
+      },
     },
   },
   define: {
