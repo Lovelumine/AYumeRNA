@@ -1,0 +1,22 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    },
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.vitest.json"
+    }
+  ],
+  "compilerOptions": {
+    "module": "NodeNext", // 保持你的模块设置
+    "moduleResolution": "NodeNext", // 必须设置为 NodeNext
+    "allowJs": true, // 允许导入 JavaScript 文件
+    "checkJs": false, // 跳过对 JavaScript 文件的类型检查
+    "esModuleInterop": true, // 确保可以正确处理 ES6 和 CommonJS 模块的导入
+    "strict": true // 开启严格模式，提供更严格的类型检查（推荐）
+  }
+}

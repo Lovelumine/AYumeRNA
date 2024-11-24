@@ -31,7 +31,7 @@ class RabbitMQConfig {
             .configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false)
             .configure(DeserializationFeature.FAIL_ON_NULL_CREATOR_PROPERTIES, false)
             .configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true)
-            .setPropertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE)
+//            .setPropertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE)
             .configure(MapperFeature.USE_STD_BEAN_NAMING, true)
     }
 
@@ -204,5 +204,23 @@ class RabbitMQConfig {
         return BindingBuilder.bind(trainTasksQueue())
             .to(trainTasksExchange())
             .with("trainTasks")
+    }
+
+    // 配置 sampleTasks 队列、交换机和绑定
+    @Bean
+    fun sampleTasksQueue(): Queue {
+        return QueueBuilder.durable("sampleTasks").build()
+    }
+
+    @Bean
+    fun sampleTasksExchange(): DirectExchange {
+        return ExchangeBuilder.directExchange("sampleTasksExchange").durable(true).build()
+    }
+
+    @Bean
+    fun sampleTasksBinding(): Binding {
+        return BindingBuilder.bind(sampleTasksQueue())
+            .to(sampleTasksExchange())
+            .with("sampleTasks")
     }
 }

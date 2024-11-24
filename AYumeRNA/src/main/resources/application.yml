@@ -80,3 +80,7 @@ minio:
   secret-key: EJxNuc7hJId6cW969JXcMtd14xs7d9wTmC17Mn5W  # MinIO secret key
   bucket-name: ayumerna  # default bucket name, can be customized
 
+# application.yml
+flask:
+  api:
+    url: http://223.82.75.76:2002
