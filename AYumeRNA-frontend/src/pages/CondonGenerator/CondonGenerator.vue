@@ -50,9 +50,24 @@ function updateModel(modelName: string) {
   selectedModel.value = modelName;
 }
 
+// 保存参数到本地存储的方法
+function saveParametersToLocalStorage() {
+  const parameters = {
+    model: selectedModel.value,
+    reverseCodon: selectedReverseCodon.value,
+    sequenceCount: sequenceCount.value,
+  };
+
+  console.log('Saving parameters to localStorage:', parameters);
+  localStorage.setItem('generationParameters', JSON.stringify(parameters));
+}
+
 // 生成序列并发送请求
 async function generateSequence() {
   try {
+    // 保存当前生成参数到本地存储
+    saveParametersToLocalStorage();
+
     // 使用 URLSearchParams 创建 x-www-form-urlencoded 格式的参数
     const params = new URLSearchParams();
     params.append('model', selectedModel.value);
@@ -65,8 +80,8 @@ async function generateSequence() {
     // 发送 POST 请求到 /sample
     const response = await axios.post('/sample/process', params, {
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
     });
 
     // 从服务器响应中更新序列
@@ -77,6 +92,7 @@ async function generateSequence() {
   }
 }
 </script>
+
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@500&family=Playfair+Display:wght@700&display=swap');
