@@ -65,43 +65,6 @@ onMounted(() => {
   margin-bottom: 1.5em;
 }
 
-.sub-title {
-  font-size: 1.5em;
-  color: #2c3e50;
-  margin-bottom: 1em;
-}
-
-.score-explanation {
-  margin-bottom: 2em;
-  font-size: 1.1em;
-  color: #7f8c8d;
-}
-
-.score-explanation pre {
-  background-color: #f4f4f4;
-  padding: 10px;
-  border-radius: 5px;
-  font-size: 1em;
-  color: #333;
-  margin: 10px 0;
-}
-
-.s-table {
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.s-table th {
-  background-color: #f2f4f8;
-  color: #2c3e50;
-  font-weight: bold;
-}
-
-.s-table .s-table__row {
-  border-bottom: 1px solid #e0e4e7;
-}
-
 .link {
   color: #409eff;
   cursor: pointer;

@@ -6,7 +6,7 @@ import type { SortOrder } from '@shene/table/dist/src/types/table'
 // 定义数据行类型
 interface TableRow {
   sequence: string
-  trexScore: number
+  trexScore: number | null
 }
 
 const TableWithAction = defineComponent({
@@ -18,6 +18,8 @@ const TableWithAction = defineComponent({
     },
   },
   setup(props) {
+    console.log('TableWithAction - Received dataSource:', props.dataSource)
+
     // 定义表格列
     const displayedColumns = [
       {
@@ -35,16 +37,24 @@ const TableWithAction = defineComponent({
         width: 120,
         ellipsis: true,
         className: 'trex-score-column',
-        sorter: (a: TableRow, b: TableRow) => a.trexScore - b.trexScore, // 添加排序功能
+        customRender: ({ record }: { record: TableRow }) => {
+          const { trexScore } = record
+          console.log('Rendering tREX score for:', record)
+          return trexScore === null ? 'Not Calculated' : trexScore.toFixed(2)
+        },
+        sorter: (a: TableRow, b: TableRow) =>
+          (a.trexScore || 0) - (b.trexScore || 0), // 添加排序功能
         sortDirections: ['ascend', 'descend'] as unknown as SortOrder[], // 使用 `as unknown as SortOrder[]` 强制转换
       },
       {
         title: 'Action',
         key: 'action',
         width: 180,
-        customRender: () => {
-          // 渲染 ActionLink 组件
-          return <ActionLink />
+        customRender: ({ record }: { record: TableRow }) => {
+          console.log('Rendering action link for sequence:', record.sequence)
+
+          // 渲染 ActionLink 组件，并传递序列信息
+          return <ActionLink sequence={record.sequence} />
         },
         className: 'action-column',
       },
