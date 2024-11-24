@@ -39,7 +39,7 @@ class SampleController(
 
     // 文件路径映射
     private val filePaths = mapOf(
-        "Phenylalanine_Bacteria.pt" to "https://minio.lumoxuan.cn/ayumerna/1-20241030205748-model.pt",
+        "Phenylalanine_Bacteria.pt" to "https://minio.lumoxuan.cn/ayumerna/model/Bacteria_Phenylalanine_model_epoch76.pt",
         "1-20241030211218-model.cm" to "https://minio.lumoxuan.cn/ayumerna/1-20241030211218-model.cm",
         "config.yaml" to "https://minio.lumoxuan.cn/ayumerna/1-20241030214357-config.yaml"
     )
