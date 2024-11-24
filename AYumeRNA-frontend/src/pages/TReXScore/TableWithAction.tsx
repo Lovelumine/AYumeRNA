@@ -3,7 +3,6 @@ import { STable } from '@shene/table'
 import ActionLink from './ActionLink'
 import type { SortOrder } from '@shene/table/dist/src/types/table'
 
-// 定义数据行类型
 interface TableRow {
   sequence: string
   trexScore: number | null
@@ -20,7 +19,6 @@ const TableWithAction = defineComponent({
   setup(props) {
     console.log('TableWithAction - Received dataSource:', props.dataSource)
 
-    // 定义表格列
     const displayedColumns = [
       {
         title: 'Sequence',
@@ -43,8 +41,8 @@ const TableWithAction = defineComponent({
           return trexScore === null ? 'Not Calculated' : trexScore.toFixed(2)
         },
         sorter: (a: TableRow, b: TableRow) =>
-          (a.trexScore || 0) - (b.trexScore || 0), // 添加排序功能
-        sortDirections: ['ascend', 'descend'] as unknown as SortOrder[], // 使用 `as unknown as SortOrder[]` 强制转换
+          (a.trexScore || 0) - (b.trexScore || 0),
+        sortDirections: ['ascend', 'descend'] as unknown as SortOrder[],
       },
       {
         title: 'Action',
@@ -53,7 +51,6 @@ const TableWithAction = defineComponent({
         customRender: ({ record }: { record: TableRow }) => {
           console.log('Rendering action link for sequence:', record.sequence)
 
-          // 渲染 ActionLink 组件，并传递序列信息
           return <ActionLink sequence={record.sequence} />
         },
         className: 'action-column',
@@ -71,7 +68,7 @@ const TableWithAction = defineComponent({
         hover
         pagination={{ pageSize: 5 }}
         rowSelection={{}}
-        rowKey="sequence" // 添加 rowKey，使用 sequence 作为唯一标识
+        rowKey="sequence"
       />
     )
   },
