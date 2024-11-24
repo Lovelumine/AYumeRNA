@@ -37,7 +37,7 @@ class SequenceService(
     fun processSequences(task: SequenceTask) {
         val userId = task.userId
 
-        messagingTemplate.convertAndSend("/topic/progress/$userId", "任务开始")
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "Task started")
 
         val tempDir = Files.createTempDirectory("sequence_upload_${userId}")
         val templateFilePath = tempDir.resolve("template.csv")
@@ -47,14 +47,14 @@ class SequenceService(
         Files.write(testFilePath, task.testFileData)
 
         try {
-            messagingTemplate.convertAndSend("/topic/progress/$userId", "进度：10% - 读取模板序列文件中...")
+            messagingTemplate.convertAndSend("/topic/progress/$userId", "Progress: 10% - Reading template sequences...")
             val resultsCsvPath = executeSequenceProcessing(
                 templateFilePath.toString(),
                 testFilePath.toString(),
                 tempDir.toString(),
                 userId
             )
-            messagingTemplate.convertAndSend("/topic/progress/$userId", "序列比对完成，保存结果中...")
+            messagingTemplate.convertAndSend("/topic/progress/$userId", "Sequences aligned, saving results...")
 
             val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
             val objectName = "$userId-$timestamp-result.csv"
@@ -71,11 +71,11 @@ class SequenceService(
             )
 
             val fileUrl = "$minioBaseUrl/$bucketName/$objectName"
-            messagingTemplate.convertAndSend("/topic/progress/$userId", "任务完成，结果已上传：$fileUrl")
+            messagingTemplate.convertAndSend("/topic/progress/$userId", "Task completed, results uploaded: $fileUrl")
 
         } catch (e: Exception) {
-            logger.error("任务执行失败：${e.message}", e)
-            messagingTemplate.convertAndSend("/topic/progress/$userId", "任务失败：${e.message}")
+            logger.error("Task execution failed: ${e.message}", e)
+            messagingTemplate.convertAndSend("/topic/progress/$userId", "Task failed: ${e.message}")
         } finally {
             Files.deleteIfExists(templateFilePath)
             Files.deleteIfExists(testFilePath)
@@ -91,19 +91,19 @@ class SequenceService(
         tempDirPath: String,
         userId: Long
     ): java.nio.file.Path {
-        messagingTemplate.convertAndSend("/topic/progress/$userId", "正在读取模板序列文件...")
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "Reading template sequences...")
         val thrSequences = readCsvSequences(templateFilePath)
-        messagingTemplate.convertAndSend("/topic/progress/$userId", "读取到 ${thrSequences.size} 个模板序列。")
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "Read ${thrSequences.size} template sequences.")
 
-        messagingTemplate.convertAndSend("/topic/progress/$userId", "正在读取测试序列文件...")
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "Reading test sequences...")
         val testSequences = readFastaSequencesWithCCA(testFilePath)
-        messagingTemplate.convertAndSend("/topic/progress/$userId", "读取到 ${testSequences.size} 个测试序列。")
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "Read ${testSequences.size} test sequences.")
 
-        messagingTemplate.convertAndSend("/topic/progress/$userId", "正在对模板序列进行多序列比对...")
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "Aligning template sequences...")
         val (alignedThrSequences, conservedPositions) = performMultipleSequenceAlignment(thrSequences)
-        messagingTemplate.convertAndSend("/topic/progress/$userId", "模板序列比对完成。")
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "Template sequence alignment completed.")
 
-        messagingTemplate.convertAndSend("/topic/progress/$userId", "正在对测试序列进行比对和打分...")
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "Aligning and scoring test sequences...")
 
         val results = scoreTestSequences(
             alignedThrSequences,
@@ -112,14 +112,13 @@ class SequenceService(
             userId
         )
 
-        messagingTemplate.convertAndSend("/topic/progress/$userId", "进度：100% - 比对完成")
+        messagingTemplate.convertAndSend("/topic/progress/$userId", "Progress: 100% - Alignment completed")
         val resultsCsvPath = Paths.get(tempDirPath, "results.csv")
         saveResultsToCsv(results, resultsCsvPath.toString())
 
         return resultsCsvPath
     }
 
-    // 修改了此方法，增加了进度更新
     private fun scoreTestSequences(
         alignedThrSequences: Map<String, String>,
         conservedPositions: Set<Int>,
@@ -129,9 +128,8 @@ class SequenceService(
         val results = mutableListOf<Map<String, Any>>()
         val gapPenalty = -2
 
-        // 将已对齐的模板序列转换为 RNASequence 对象
         val thrSeqs = alignedThrSequences.map { (header, seqStr) ->
-            val seqWithoutGaps = seqStr.replace('-', 'N') // 替换缺口为 'N'
+            val seqWithoutGaps = seqStr.replace('-', 'N')
             val rnaSeq = RNASequence(seqWithoutGaps)
             rnaSeq.accession = AccessionID(header)
             rnaSeq
@@ -149,8 +147,6 @@ class SequenceService(
                 combinedSequences.add(testSeq)
 
                 val gapPenaltyObj = SimpleGapPenalty(5, 2)
-
-                // 使用自定义的 RNA 替换矩阵
                 val substitutionMatrix = getRnaSubstitutionMatrix()
 
                 val msa: Profile<RNASequence, NucleotideCompound> = Alignments.getMultipleSequenceAlignment(
@@ -170,12 +166,11 @@ class SequenceService(
                 val alignedTestSeq = alignedSequences[testHeader]
 
                 if (alignedTestSeq == null) {
-                    logger.error("未能在比对结果中找到测试序列：$testHeader")
+                    logger.error("Could not find aligned test sequence: $testHeader")
                     continue
                 }
 
-                // 计算得分
-                var score = 0.0 // 修改为 Double 类型
+                var score = 0.0
                 for (pos in conservedPositions) {
                     val testBase = alignedTestSeq[pos]
                     if (testBase == '-') {
@@ -191,7 +186,6 @@ class SequenceService(
                     }
                 }
 
-                // 归一化得分
                 val normalizedScore = score / conservedPositions.size
 
                 results.add(
@@ -202,16 +196,15 @@ class SequenceService(
                     )
                 )
 
-                // 更新进度
                 val progress = ((index + 1).toDouble() / testSequences.size * 80).toInt() + 10
                 messagingTemplate.convertAndSend(
                     "/topic/progress/$userId",
-                    "进度：$progress% - 已处理测试序列：$testHeader (${index + 1}/${testSequences.size})"
+                    "Progress: $progress% - Processed test sequence: $testHeader (${index + 1}/${testSequences.size})"
                 )
 
             } catch (e: Exception) {
-                logger.error("比对失败：${e.message}", e)
-                messagingTemplate.convertAndSend("/topic/progress/$userId", "比对失败：$testHeader，错误信息：${e.message}")
+                logger.error("Alignment failed: ${e.message}", e)
+                messagingTemplate.convertAndSend("/topic/progress/$userId", "Alignment failed: $testHeader, error: ${e.message}")
                 continue
             }
         }
@@ -219,18 +212,15 @@ class SequenceService(
         return results
     }
 
-    // 以下方法保持不变
-
-    // 读取 CSV 文件中的序列
     private fun readCsvSequences(filePath: String): List<Pair<String, RNASequence>> {
         val sequences = mutableListOf<Pair<String, RNASequence>>()
         Files.newBufferedReader(Paths.get(filePath)).use { reader ->
-            reader.readLine() // 跳过表头
+            reader.readLine() // Skip header
             var index = 0
             reader.lineSequence().forEach { line ->
                 val columns = line.split(",")
                 if (columns.isNotEmpty()) {
-                    val seqStr = columns.last().trim() // 假设序列在最后一列
+                    val seqStr = columns.last().trim()
                     val seq = RNASequence(seqStr)
                     val header = "Thr_seq_$index"
                     sequences.add(Pair(header, seq))
@@ -241,7 +231,6 @@ class SequenceService(
         return sequences
     }
 
-    // 读取 FASTA 文件中的序列并添加 CCA
     private fun readFastaSequencesWithCCA(filePath: String): List<Pair<String, RNASequence>> {
         val sequences = mutableListOf<Pair<String, RNASequence>>()
         var header: String? = null
@@ -250,7 +239,7 @@ class SequenceService(
             reader.lineSequence().forEach { line ->
                 if (line.startsWith(">")) {
                     if (header != null && seqBuilder.isNotEmpty()) {
-                        val sequence = seqBuilder.toString() + "CCA"
+                        val sequence = seqBuilder.toString()
                         val rnaSeq = RNASequence(sequence)
                         sequences.add(Pair(header!!, rnaSeq))
                         seqBuilder.clear()
@@ -260,9 +249,8 @@ class SequenceService(
                     seqBuilder.append(line.trim())
                 }
             }
-            // 添加最后一个序列
             if (header != null && seqBuilder.isNotEmpty()) {
-                val sequence = seqBuilder.toString() + "CCA"
+                val sequence = seqBuilder.toString()
                 val rnaSeq = RNASequence(sequence)
                 sequences.add(Pair(header!!, rnaSeq))
             }
@@ -270,19 +258,15 @@ class SequenceService(
         return sequences
     }
 
-    // 创建适用于 RNA 的替换矩阵
     private fun getRnaSubstitutionMatrix(): SubstitutionMatrix<NucleotideCompound> {
         val rnaCompounds = RNACompoundSet.getRNACompoundSet()
 
-        // 定义匹配和不匹配的分数
         val matchScore: Short = 1
         val mismatchScore: Short = -1
 
-        // 创建替换矩阵
         return SimpleSubstitutionMatrix(rnaCompounds, matchScore, mismatchScore)
     }
 
-    // 使用 BioJava 进行多序列比对，返回比对后的序列和保守位点列表
     private fun performMultipleSequenceAlignment(
         sequences: List<Pair<String, RNASequence>>
     ): Pair<Map<String, String>, Set<Int>> {
@@ -292,8 +276,6 @@ class SequenceService(
         }
 
         val gapPenalty = SimpleGapPenalty(5, 2)
-
-        // 使用自定义的 RNA 替换矩阵
         val substitutionMatrix = getRnaSubstitutionMatrix()
 
         val msa: Profile<RNASequence, NucleotideCompound> = Alignments.getMultipleSequenceAlignment(
@@ -310,7 +292,6 @@ class SequenceService(
             alignedSequences[header] = seq
         }
 
-        // 找出保守位点
         val sequenceLength = alignedSequences.values.first().length
         val conservedPositions = mutableSetOf<Int>()
         for (i in 0 until sequenceLength) {
@@ -323,7 +304,6 @@ class SequenceService(
         return Pair(alignedSequences, conservedPositions)
     }
 
-    // 保存结果到 CSV 文件
     private fun saveResultsToCsv(results: List<Map<String, Any>>, filePath: String) {
         val file = File(filePath)
         file.bufferedWriter().use { writer ->
