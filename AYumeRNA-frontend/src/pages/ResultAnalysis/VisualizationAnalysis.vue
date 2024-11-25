@@ -9,7 +9,7 @@
     <!-- Buttons for navigating to sub-pages -->
     <div class="sub-pages">
       <router-link to="/visualization/secondary-structure">
-        <button class="nav-btn secondary">View Secondary Structure Prediction (using tRNAscan-SE & R2DT)</button>
+        <button class="nav-btn secondary">View Secondary Structure Prediction (using R2DT)</button>
       </router-link>
       <router-link to="/visualization/tertiary-structure">
         <button class="nav-btn tertiary">View Tertiary Structure Prediction (using AlphaFold 3)</button>
@@ -22,10 +22,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 
-// Mock data for tRNA sequence
-const tRNASequence = ref('GCGTTGGTGGTATAGTGGTtAGCATAGCTGCCTTCAAAGCAGTTGaCCCGGGTTCGATTCCCGGCCAACGCA')
+// Define tRNASequence as a reactive reference
+const tRNASequence = ref('')
+
+// Fetch the analyzed sequence from local storage when the component is mounted
+onMounted(() => {
+  const analyzedData = localStorage.getItem('analyzedSequence')
+  if (analyzedData) {
+    try {
+      const parsedData = JSON.parse(analyzedData)
+      tRNASequence.value = parsedData.sequence || 'No sequence available'
+    } catch (error) {
+      console.error('Failed to parse analyzedSequence from local storage:', error)
+      tRNASequence.value = 'Error retrieving sequence'
+    }
+  } else {
+    tRNASequence.value = 'No analyzed sequence found in local storage'
+  }
+})
 </script>
 
 <style scoped>

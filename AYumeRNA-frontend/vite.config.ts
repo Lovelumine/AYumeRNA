@@ -44,7 +44,11 @@ export default defineConfig({
         changeOrigin: true, // 修改请求头中的 Origin 字段
       },
       '/sequence/process': {
-        target: 'http://127.0.0.1:36243', // 后端 WebSocket 服务地址
+        target: 'http://127.0.0.1:36243', //
+        changeOrigin: true, // 修改请求头中的 Origin 字段
+      },
+      '/r2dt/run': {
+        target: 'http://223.82.75.76:2002', //
         changeOrigin: true, // 修改请求头中的 Origin 字段
       },
     },

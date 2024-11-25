@@ -2,108 +2,102 @@
   <div class="secondary-structure">
     <h2>tRNA Secondary Structure Prediction</h2>
 
-    <!-- tRNA 相关信息 -->
-    <section class="info-section">
-      <h3>tRNA Information</h3>
-      <table>
-        <tr>
-          <th>Name</th>
-          <td>{{ tRNAInfo.name }}</td>
-        </tr>
-        <tr>
-          <th>Sequence</th>
-          <td>{{ tRNAInfo.sequence }}</td>
-        </tr>
-        <tr>
-          <th>Type</th>
-          <td>{{ tRNAInfo.type }}</td>
-        </tr>
-        <tr>
-          <th>Anticodon</th>
-          <td>{{ tRNAInfo.anticodon }}</td>
-        </tr>
-        <tr>
-          <th>Score</th>
-          <td>{{ tRNAInfo.score }}</td>
-        </tr>
-        <tr>
-          <th>Intron Bounds</th>
-          <td>{{ tRNAInfo.intronBounds }}</td>
-        </tr>
-      </table>
-    </section>
+    <!-- Loading indicator -->
+    <div v-if="loading" class="loading">
+      <p>Loading prediction results...</p>
+    </div>
 
-    <!-- Forna 二级结构展示 -->
-    <section class="forna-container">
-      <h3>tRNA Secondary Structure Visualization</h3>
-      <div id="forna" class="forna-view"></div>
-    </section>
+    <!-- Displaying the results -->
+    <div v-if="predictionResult">
+      <h3>Dot-Bracket Structure</h3>
+      <pre>{{ predictionResult.dot_bracket }}</pre>
 
-    <!-- 序列展示 -->
-    <section class="sequence-section">
-      <h3>tRNA Sequence</h3>
-      <pre>{{ tRNAInfo.sequence }}</pre>
-    </section>
+      <h3>SVG Visualizations</h3>
+      <div class="forna-container">
+        <div class="svg-view">
+          <h4>Colored SVG</h4>
+          <p>This image shows the colored secondary structure of tRNA, helping to identify different structural regions.</p>
+          <div v-html="predictionResult.svg_files.colored_svg"></div>
+        </div>
+        <div class="svg-view">
+          <h4>Enriched SVG</h4>
+          <p>This image provides an enriched view of the tRNA secondary structure, including detailed annotations and information.</p>
+          <div v-html="predictionResult.svg_files.enriched_svg"></div>
+        </div>
+        <div class="svg-view">
+          <h4>Thumbnail SVG</h4>
+          <p>This image is a thumbnail of the tRNA secondary structure, suitable for quick preview.</p>
+          <div v-html="predictionResult.svg_files.thumbnail_svg"></div>
+        </div>
+      </div>
+    </div>
 
-    <!-- 下载链接 -->
-    <section class="download-section">
-      <button class="download-btn" @click="downloadSequence">Download tRNA Sequence (FASTA)</button>
-    </section>
+    <!-- Error handling -->
+    <div v-if="error" class="error-message">
+      <p>Error: {{ error }}</p>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import * as fornac from '@/fornac/fornac.js';  // 导入整个 fornac 模块
+import axios from 'axios'
 
-// Mock 数据：tRNA 信息
-const tRNAInfo = ref({
-  name: "seq1",
-  sequence: "CGCUUCAUAUAAUCCUAAUGAUAUGGUUUGGGAGUUUCUACCAAGAGCCUUAAACUCUUGAUUAUGAAGUG",
-  type: "Sup",
-  anticodon: "TCA (34-36)",
-  score: 73.8,
-  intronBounds: "0-0"
-});
-
-// Forna 二级结构渲染
-onMounted(() => {
-  const fornaContainer = document.getElementById('forna');
-  if (fornaContainer) {
-    const structure = '....(((((((..((((((.........))))))......).((((((.......))))))..))))))...';  // 假设这是一个有效的结构
-    const sequence = tRNAInfo.value.sequence;
-
-    // 创建 Forna 实例并绘制结构
-    const forna = new fornac.FornaContainer(fornaContainer, {
-      animation: true,
-      zoomable: true,
-      editable: false,
-    });
-
-    // 使用正确的 structure 和 sequence 进行展示
-    forna.addRNA(sequence, structure);
-    forna.displayNumbering(false);
+interface PredictionResult {
+  dot_bracket: string
+  svg_files: {
+    colored_svg: string
+    enriched_svg: string
+    thumbnail_svg: string
   }
-});
+}
 
-// 下载 FASTA 序列
-const downloadSequence = () => {
-  const fastaContent = `>${tRNAInfo.value.name}\n${tRNAInfo.value.sequence}`;
-  const blob = new Blob([fastaContent], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${tRNAInfo.value.name}.fasta`;
-  a.click();
-  URL.revokeObjectURL(url);  // 清理 URL 对象
-};
+// State management
+const rnaSequence = ref<string | null>(null)
+const predictionResult = ref<PredictionResult | null>(null)
+const loading = ref(false)
+const error = ref<string | null>(null)
+
+// Fetch sequence from local storage and request prediction
+onMounted(async () => {
+  // Load sequence from local storage
+  const storedSequence = localStorage.getItem('analyzedSequence')
+  if (storedSequence) {
+    try {
+      const parsed = JSON.parse(storedSequence)
+      rnaSequence.value = parsed.sequence
+    } catch (e) {
+      console.error('Error parsing sequence from local storage:', e)
+      error.value = 'Invalid sequence data in local storage'
+      return
+    }
+  } else {
+    error.value = 'No sequence found in local storage'
+    return
+  }
+
+  // Request prediction from R2DT
+  if (rnaSequence.value) {
+    try {
+      loading.value = true
+      const response = await axios.post('/r2dt/run', {
+        sequence: rnaSequence.value,
+      })
+      predictionResult.value = response.data
+    } catch (e) {
+      console.error('Error fetching R2DT results:', e)
+      error.value = 'Failed to fetch prediction results'
+    } finally {
+      loading.value = false
+    }
+  }
+})
 </script>
 
 <style scoped>
 .secondary-structure {
   padding: 30px;
   width: 100%;
-
   margin: 0 auto;
   font-family: 'Arial', sans-serif;
   text-align: left;
@@ -122,25 +116,10 @@ h3 {
   margin-bottom: 10px;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 30px;
-}
-
-th, td {
-  padding: 10px;
-  text-align: left;
-  border: 1px solid #ddd;
-}
-
-th {
-  background-color: #f4f4f4;
-  font-weight: bold;
-}
-
-td {
-  color: #333;
+h4 {
+  font-size: 1.4em;
+  color: #409eff;
+  margin-bottom: 10px;
 }
 
 pre {
@@ -155,6 +134,18 @@ pre {
   width: 100%;
 }
 
+.loading {
+  text-align: center;
+  font-size: 1.2em;
+  color: #888;
+}
+
+.error-message {
+  text-align: center;
+  font-size: 1.2em;
+  color: red;
+}
+
 .forna-container {
   margin-top: 30px;
   padding: 20px;
@@ -163,26 +154,28 @@ pre {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.forna-view {
+.svg-view {
   margin-top: 20px;
-  height: 400px; /* Set height for Forna display */
+  padding: 15px;
   border: 1px solid #ddd;
-  background-color: #fff;
-}
-
-.download-btn {
-  background-color: #409eff;
-  color: white;
-  padding: 12px 20px;
   border-radius: 6px;
-  font-size: 1.2em;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: none;
+  background-color: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  text-align: center; /* Center content */
 }
 
-.download-btn:hover {
-  background-color: #66b1ff;
-  transform: scale(1.05);
+.svg-view h4 {
+  margin-bottom: 10px;
+}
+
+.svg-view p {
+  margin-bottom: 15px;
+  font-size: 1em;
+  color: #666;
+}
+
+.svg-view > div {
+  overflow-x: auto;
+  display: inline-block; /* Ensure content is centered */
 }
 </style>
