@@ -174,6 +174,7 @@ const fetchAndReplaceSequences = async (url: string) => {
       .filter((line) => line.trim() !== '')
       .map((line) => {
         const [_, scoreStr, sequence] = line.split(','); // 按逗号分隔
+        console.log(_)
         return { sequence: sequence.trim(), trexScore: parseFloat(scoreStr.trim()) };
       });
 
