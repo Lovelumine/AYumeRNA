@@ -16,17 +16,18 @@
       <div class="forna-container">
         <div class="svg-view">
           <h4>Colored SVG</h4>
-          <p>This image shows the colored secondary structure of tRNA, helping to identify different structural regions.</p>
+          <p>
+            This image shows the colored secondary structure of tRNA, helping to
+            identify different structural regions.
+          </p>
           <div v-html="predictionResult.svg_files.colored_svg"></div>
         </div>
         <div class="svg-view">
-          <h4>Enriched SVG</h4>
-          <p>This image provides an enriched view of the tRNA secondary structure, including detailed annotations and information.</p>
-          <div v-html="predictionResult.svg_files.enriched_svg"></div>
-        </div>
-        <div class="svg-view">
           <h4>Thumbnail SVG</h4>
-          <p>This image is a thumbnail of the tRNA secondary structure, suitable for quick preview.</p>
+          <p>
+            This image is a thumbnail of the tRNA secondary structure, suitable
+            for quick preview.
+          </p>
           <div v-html="predictionResult.svg_files.thumbnail_svg"></div>
         </div>
       </div>
@@ -47,7 +48,7 @@ interface PredictionResult {
   dot_bracket: string
   svg_files: {
     colored_svg: string
-    enriched_svg: string
+    enriched_svg?: string
     thumbnail_svg: string
   }
 }
@@ -58,6 +59,52 @@ const predictionResult = ref<PredictionResult | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 
+// Helper function to get saved results for a sequence
+function getSavedPrediction(sequence: string): PredictionResult | null {
+  const savedData = localStorage.getItem('analyzedSequences')
+  if (savedData) {
+    try {
+      const analyzedSequences = JSON.parse(savedData) as {
+        sequence: string
+        predictionResult: PredictionResult
+      }[]
+      const match = analyzedSequences.find(item => item.sequence === sequence)
+      return match ? match.predictionResult : null
+    } catch (e) {
+      console.error('Error parsing analyzedSequences from local storage:', e)
+    }
+  }
+  return null
+}
+
+// Helper function to save results to local storage
+function savePrediction(sequence: string, result: PredictionResult) {
+  const savedData = localStorage.getItem('analyzedSequences')
+  let analyzedSequences: {
+    sequence: string
+    predictionResult: PredictionResult
+  }[] = []
+
+  if (savedData) {
+    try {
+      analyzedSequences = JSON.parse(savedData)
+    } catch (e) {
+      console.error('Error parsing analyzedSequences from local storage:', e)
+    }
+  }
+
+  const existingIndex = analyzedSequences.findIndex(
+    item => item.sequence === sequence,
+  )
+  if (existingIndex !== -1) {
+    analyzedSequences[existingIndex].predictionResult = result
+  } else {
+    analyzedSequences.push({ sequence, predictionResult: result })
+  }
+
+  localStorage.setItem('analyzedSequences', JSON.stringify(analyzedSequences))
+}
+
 // Fetch sequence from local storage and request prediction
 onMounted(async () => {
   // Load sequence from local storage
@@ -67,7 +114,7 @@ onMounted(async () => {
       const parsed = JSON.parse(storedSequence)
       rnaSequence.value = parsed.sequence
     } catch (e) {
-      console.error('Error parsing sequence from local storage:', e)
+      console.error('Error parsing currentSequence from local storage:', e)
       error.value = 'Invalid sequence data in local storage'
       return
     }
@@ -76,14 +123,24 @@ onMounted(async () => {
     return
   }
 
-  // Request prediction from R2DT
+  // Check if the result for this sequence is already saved
   if (rnaSequence.value) {
+    const savedResult = getSavedPrediction(rnaSequence.value)
+    if (savedResult) {
+      predictionResult.value = savedResult
+      console.log('Loaded prediction result from local storage.')
+      return
+    }
+
+    // Request prediction from R2DT if no saved result is found
     try {
       loading.value = true
       const response = await axios.post('/r2dt/run', {
         sequence: rnaSequence.value,
       })
+
       predictionResult.value = response.data
+      savePrediction(rnaSequence.value, response.data)
     } catch (e) {
       console.error('Error fetching R2DT results:', e)
       error.value = 'Failed to fetch prediction results'
@@ -161,7 +218,7 @@ pre {
   border-radius: 6px;
   background-color: #fff;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  text-align: center; /* Center content */
+  text-align: center;
 }
 
 .svg-view h4 {
@@ -176,6 +233,6 @@ pre {
 
 .svg-view > div {
   overflow-x: auto;
-  display: inline-block; /* Ensure content is centered */
+  display: inline-block;
 }
 </style>
