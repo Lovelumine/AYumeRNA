@@ -2,7 +2,7 @@
   <div class="sequence-result">
     <h3>Sampling Task Status</h3>
 
-    <!-- 初始任务提交信息 -->
+    <!-- 显示任务状态消息 -->
     <p v-if="statusMessage">{{ statusMessage }}</p>
 
     <!-- 最终结果展示 -->
@@ -11,6 +11,7 @@
       <a :href="resultUrl" target="_blank" @click.prevent="downloadAndParseFile">Click to download the result</a>
     </p>
 
+    <!-- 显示本地存储的序列数据 -->
     <el-table v-if="sequences.length" :data="sequences" style="width: 100%">
       <el-table-column prop="index" label="Index" width="80">
         <template #default="scope">
@@ -50,8 +51,36 @@ const router = useRouter();
 // 假设你已经接收到服务器返回的 `subscribeUrl`
 const subscribeUrl = '/topic/progress/1';
 
-// WebSocket 连接和订阅进度
+// 在组件加载时读取本地存储的数据
 onMounted(() => {
+  console.log('Loading sequences from localStorage...');
+  loadSequencesFromLocalStorage();
+  connectWebSocket(); // 连接 WebSocket
+});
+
+// 加载本地存储数据的方法
+function loadSequencesFromLocalStorage() {
+  const storedSequences = localStorage.getItem('sequences');
+  if (storedSequences) {
+    try {
+      sequences.value = JSON.parse(storedSequences);
+      console.log('Loaded sequences from localStorage:', sequences.value);
+    } catch (error) {
+      console.error('Failed to parse sequences from localStorage:', error);
+    }
+  } else {
+    console.log('No sequences found in localStorage.');
+  }
+}
+
+// 保存所有序列到 localStorage
+function saveSequencesToLocalStorage() {
+  console.log('Saving all sequences to localStorage:', sequences.value);
+  localStorage.setItem('sequences', JSON.stringify(sequences.value));
+}
+
+// WebSocket 连接和订阅进度
+function connectWebSocket() {
   console.log('Attempting to connect to WebSocket...');
   const socket = new SockJS('/sockjs/ws');  // 替换为实际的 WebSocket URL
   const stompClient = new Client({
@@ -104,7 +133,7 @@ onMounted(() => {
   });
 
   stompClient.activate();
-});
+}
 
 // 下载并解析FA文件
 async function downloadAndParseFile() {
@@ -162,22 +191,12 @@ function parseFastaFile(fileContent: string): Sequence[] {
   return sequences;
 }
 
-// 保存所有序列到 localStorage
-function saveSequencesToLocalStorage() {
-  console.log('Saving all sequences to localStorage:', sequences.value);
-  localStorage.setItem('sequences', JSON.stringify(sequences.value));
-}
-
 // 跳转到分析页面
 function goToAnalysis() {
   // 在点击分析时保存当前的序列
   console.log('Saving all sequences before navigation:', sequences.value);
 
-  const sequencesJson = JSON.stringify(sequences.value);
-  localStorage.setItem('sequences', sequencesJson);
-
-  // 打印出保存的序列内容，确保存储成功
-  console.log('All sequences saved to localStorage:', sequencesJson);
+  saveSequencesToLocalStorage();
 
   console.log('Navigating to analysis page');
   router.push({ name: 'TReXScore' });

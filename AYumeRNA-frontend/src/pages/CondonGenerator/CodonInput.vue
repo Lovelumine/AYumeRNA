@@ -37,10 +37,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'; // 引入 watch 进行监听
+import { ref, computed, watch, onMounted } from 'vue';
 import { defineEmits } from 'vue';
 
-const emits = defineEmits(['updateModel']); // 定义事件，用于向父组件传递数据
+const emits = defineEmits(['updateModel']);
 
 // Mock data
 const aminoAcids = [
@@ -54,18 +54,43 @@ const speciesList = [
   'Eukaryota', 'Bacteria', 'Archaea',
 ];
 
+// 定义状态变量
 const aminoAcid = ref(aminoAcids[0]);
 const species = ref(speciesList[0]);
+
+// 在组件加载时读取本地存储的数据
+onMounted(() => {
+  const storedParameters = localStorage.getItem('generationParameters');
+  if (storedParameters) {
+    try {
+      const params = JSON.parse(storedParameters);
+      if (params.aminoAcid && params.species) {
+        aminoAcid.value = params.aminoAcid;
+        species.value = params.species;
+        console.log('Loaded parameters from localStorage:', params);
+      }
+    } catch (error) {
+      console.error('Failed to parse parameters from localStorage:', error);
+    }
+  }
+});
 
 // 计算属性，生成模型名称
 const modelName = computed(() => {
   return `${aminoAcid.value}_${species.value}.pt`;
 });
 
-// 监听 modelName 变化并触发事件
-watch(modelName, (newModelName) => {
-  console.log('modelName updated:', newModelName); // 检查 modelName 是否更新
-  emits('updateModel', newModelName);
+// 监听 aminoAcid 和 species 的变化，保存到 localStorage，并触发事件
+watch([aminoAcid, species], () => {
+  const parameters = {
+    aminoAcid: aminoAcid.value,
+    species: species.value,
+  };
+  localStorage.setItem('generationParameters', JSON.stringify(parameters));
+  console.log('Saved parameters to localStorage:', parameters);
+
+  // 更新模型名称
+  emits('updateModel', modelName.value);
 });
 </script>
 
