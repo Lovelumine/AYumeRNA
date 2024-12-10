@@ -48,7 +48,10 @@
     </button>
 
     <!-- 使用 TableWithAction 组件 -->
-    <TableWithAction :data-source="sequences" />
+    <TableWithAction
+      :data-source="sequences"
+      @download-selected="downloadSelectedResults"
+    />
   </div>
 </template>
 
@@ -239,6 +242,29 @@ const fetchAndReplaceSequences = async (url: string) => {
   } catch (error) {
     console.error('Error fetching or replacing sequences:', error)
   }
+}
+
+// 下载选中结果
+const downloadSelectedResults = (selectedRows: Sequence[]) => {
+  if (!selectedRows.length) {
+    alert('No rows selected to download.')
+    return
+  }
+  const content = selectedRows
+    .map(
+      row =>
+        `Sequence: ${row.sequence}, tREX Score: ${row.trexScore ?? 'Not Calculated'}`,
+    )
+    .join('\n')
+  const blob = new Blob([content], { type: 'text/plain' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'selected_results.txt'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
 // 提供下载功能
