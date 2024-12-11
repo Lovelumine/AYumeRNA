@@ -18,7 +18,9 @@ class SequenceController(
 
     // 文件路径映射表
     private val filePaths = mapOf(
-        "Phenylalanine_Bacteria_TAA" to "https://minio.lumoxuan.cn/ayumerna/model/Thr序列.csv",
+        "TAA" to "https://minio.lumoxuan.cn/ayumerna/model/Thr序列.csv",
+        "TAG" to "https://minio.lumoxuan.cn/ayumerna/model/Thr序列.csv",
+        "TGA" to "https://minio.lumoxuan.cn/ayumerna/model/Thr序列.csv",
     )
 
     private val httpClient = OkHttpClient() // 创建 HTTP 客户端
@@ -35,7 +37,7 @@ class SequenceController(
         val username: String = "lovelumine"
 
         // 构造映射键
-        val key = "${aminoAcid}_${domain}_${reverseCodon}"
+        val key = reverseCodon
         val templateFileUrl = filePaths[key] ?: run {
             // 如果未找到映射，返回 400 错误
             val errorMessage = "未找到对应的模板文件映射，请检查输入参数"

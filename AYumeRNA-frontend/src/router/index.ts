@@ -8,11 +8,10 @@ import TertiaryStructure from '../pages/ResultAnalysis/TertiaryStructure/Tertiar
 import SequenceVerification from '../pages/SequenceVerification/SequenceVerification.vue' // 序列验证组件
 
 const routes = [
-  { path: '/', name: 'Home', component: Home },
-  { path: '/generator', name: 'RfamGen', component: CodonGenerator },
+  { path: '/', name: 'Sequence Generator', component: CodonGenerator },
   {
     path: '/trex-score',
-    name: 'TReXScore',
+    name: 'tRNACompatibility Evaluator',
     component: TReXScore,
   },
   {
@@ -41,6 +40,7 @@ const routes = [
         'Compare generated tRNA sequences with natural tRNA sequences for verification using tRNAscan-SE tool.', // 为页面添加描述
     },
   },
+  { path: '/help', name: 'Help', component: Home },
 ]
 
 const router = createRouter({

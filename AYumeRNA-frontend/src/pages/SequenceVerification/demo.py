@@ -1,30 +1,57 @@
-import random
+import requests
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service as ChromeService
+import time
 
-def generate_sequence(length):
-    """生成一个随机的 tRNA 序列（包括随机的碱基）"""
-    bases = ['A', 'T', 'C', 'G']
-    return ''.join(random.choice(bases) for _ in range(length))
+# 设置 Selenium，无头浏览器模式
+options = Options()
+options.add_argument("--headless")
+options.add_argument("--disable-gpu")
+options.add_argument("--no-sandbox")
 
-def generate_aligned_sequences():
-    """生成两个具有匹配区域的 tRNA 序列"""
-    seq1 = generate_sequence(50)
-    seq2 = generate_sequence(50)
+# 替换为您实际的 ChromeDriver 可执行文件路径
+service = ChromeService(executable_path='path_to_chromedriver')  # 请将此路径替换为实际路径
+driver = webdriver.Chrome(service=service, options=options)
 
-    # 在 seq1 和 seq2 中创建一个匹配区域
-    match_start = random.randint(10, 30)
-    match_end = match_start + 10
-    seq1 = seq1[:match_start] + seq2[match_start:match_end] + seq1[match_end:]
+# 访问网站以获取 cookies
+driver.get("https://lowelab.ucsc.edu/cgi-bin/tRNAscan-SE2.cgi")
 
-    # 另一处区域也做相似的处理
-    second_match_start = random.randint(35, 45)
-    second_match_end = second_match_start + 7
-    seq1 = seq1[:second_match_start] + seq2[second_match_start:second_match_end] + seq1[second_match_end:]
+# 等待页面完全加载
+time.sleep(2)
 
-    return seq1, seq2
+# 从浏览器获取 cookies
+cookies = driver.get_cookies()
+driver.quit()
 
-# 生成示例序列
-seq1, seq2 = generate_aligned_sequences()
+# 将 cookies 转换为适用于 requests 库的格式
+session = requests.Session()
+for cookie in cookies:
+    session.cookies.set(cookie['name'], cookie['value'])
 
-# 打印生成的序列
-print("Generated Sequence 1:", seq1)
-print("Generated Sequence 2:", seq2)
+# 准备带有指定参数的负载
+payload = {
+    'result': 'html',
+    'organism': 'Eukaryotic',
+    'mode': 'Default',
+    'qformat': 'raw',
+    'seqname': '',
+    'qseq': 'GGCCCAAUAGCUAAGUAGGUAUAGCAGGGGACUGAAAAUCCCCGUGUCGGCAGUUCGAUUCUGCCUUGGGCCA',
+    'gcode': 'Universal',
+    'score': ''
+}
+
+# 准备文件参数，包含一个空的 'seqfile'
+files = {
+    'seqfile': ('', '', 'application/octet-stream')
+}
+
+# 使用携带 cookies 的会话发送 POST 请求
+response = session.post(
+    'https://lowelab.ucsc.edu/cgi-bin/tRNAscan-SE2.cgi',
+    data=payload,
+    files=files
+)
+
+# 打印响应的 HTML 内容
+print(response.text)

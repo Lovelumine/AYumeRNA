@@ -1,7 +1,9 @@
-import { defineComponent, type PropType } from 'vue'
-import { STable } from '@shene/table'
+import { defineComponent, ref, type PropType } from 'vue'
+import { STable, STableProvider } from '@shene/table'
 import ActionLink from './ActionLink'
+import en from '@shene/table/dist/locale/en'
 import type { SortOrder } from '@shene/table/dist/src/types/table'
+import styles from './TableWithAction.module.css' // 导入样式文件
 
 interface TableRow {
   sequence: string
@@ -16,17 +18,38 @@ const TableWithAction = defineComponent({
       required: true,
     },
   },
-  setup(props) {
-    console.log('TableWithAction - Received dataSource:', props.dataSource)
+  emits: ['download-selected'],
+  setup(props, { emit }) {
+    const selectedRowKeys = ref<(string | number)[]>([]) // 用于存储选中的行键
+    const selectedRows = ref<TableRow[]>([]) // 存储选中行的完整数据
 
+    // 自定义行点击行为
+    const customRow = ({ record }: { record: TableRow }) => {
+      if (!record) return {}
+      return {
+        onClick: () => {
+          const index = selectedRowKeys.value.indexOf(record.sequence)
+          if (index > -1) {
+            selectedRowKeys.value.splice(index, 1)
+          } else {
+            selectedRowKeys.value.push(record.sequence)
+          }
+          console.log('Updated selectedRowKeys:', selectedRowKeys.value)
+        },
+        style: { cursor: 'pointer' },
+      }
+    }
+
+    // 定义表格列
     const displayedColumns = [
       {
         title: 'Sequence',
         dataIndex: 'sequence',
         key: 'sequence',
-        width: 200,
+        width: 800,
         ellipsis: true,
         className: 'sequence-column',
+        resizable: true,
       },
       {
         title: 'tREX Score',
@@ -35,9 +58,9 @@ const TableWithAction = defineComponent({
         width: 120,
         ellipsis: true,
         className: 'trex-score-column',
+        resizable: true,
         customRender: ({ record }: { record: TableRow }) => {
           const { trexScore } = record
-          console.log('Rendering tREX score for:', record)
           return trexScore === null ? 'Not Calculated' : trexScore.toFixed(2)
         },
         sorter: (a: TableRow, b: TableRow) =>
@@ -49,27 +72,48 @@ const TableWithAction = defineComponent({
         key: 'action',
         width: 180,
         customRender: ({ record }: { record: TableRow }) => {
-          console.log('Rendering action link for sequence:', record.sequence)
-
           return <ActionLink sequence={record.sequence} />
         },
         className: 'action-column',
+        resizable: true,
       },
     ]
 
     return () => (
-      <STable
-        columns={displayedColumns}
-        dataSource={props.dataSource}
-        stripe
-        size="default"
-        showSorterTooltip
-        bordered
-        hover
-        pagination={{ pageSize: 5 }}
-        rowSelection={{}}
-        rowKey="sequence"
-      />
+      <div>
+        <button
+          class={styles.downloadBtn} // 应用模块化样式
+          onClick={() => emit('download-selected', selectedRows.value)}
+        >
+          Download Selected Rows
+        </button>
+
+        <STableProvider locale={en}>
+          <STable
+            v-model:selectedRowKeys={selectedRowKeys.value} // 绑定选中行
+            columns={displayedColumns}
+            dataSource={props.dataSource}
+            customRow={customRow}
+            row-selection="rowSelection"
+            highlight-selected
+            stripe
+            size="default"
+            showSorterTooltip
+            bordered
+            hover
+            pagination={{ pageSize: 5 }}
+            rowSelection={{
+              type: 'checkbox', // 支持多选
+              onChange: (keys: (string | number)[], rows: TableRow[]) => {
+                selectedRowKeys.value = keys
+                selectedRows.value = rows
+                console.log('Selected rows updated:', rows)
+              },
+            }}
+            rowKey="sequence"
+          />
+        </STableProvider>
+      </div>
     )
   },
 })
