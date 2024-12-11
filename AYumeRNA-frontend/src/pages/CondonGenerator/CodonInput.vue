@@ -54,24 +54,60 @@ const species = ref(speciesList[0])
 
 // 在组件加载时读取本地存储的数据
 onMounted(() => {
+  console.log(
+    '[onMounted] Component mounted. Attempting to load saved parameters.',
+  )
+
   const storedParameters = localStorage.getItem('generationParameters')
   if (storedParameters) {
+    console.log('[onMounted] Found stored parameters:', storedParameters)
+
     try {
       const params = JSON.parse(storedParameters)
-      if (params.aminoAcid && params.species) {
-        aminoAcid.value = params.aminoAcid
-        species.value = params.species
-        console.log('Loaded parameters from localStorage:', params)
+
+      if (params.model) {
+        console.log('[onMounted] Parsing model:', params.model)
+
+        const [parsedAminoAcid, parsedSpecies] = params.model
+          .replace('.pt', '')
+          .split('_')
+
+        console.log('[onMounted] Parsed aminoAcid:', parsedAminoAcid)
+        console.log('[onMounted] Parsed species:', parsedSpecies)
+
+        if (aminoAcids.includes(parsedAminoAcid)) {
+          aminoAcid.value = parsedAminoAcid
+          console.log('[onMounted] aminoAcid initialized to:', aminoAcid.value)
+        } else {
+          console.warn(
+            '[onMounted] Parsed aminoAcid not in aminoAcids list:',
+            parsedAminoAcid,
+          )
+        }
+
+        if (speciesList.includes(parsedSpecies)) {
+          species.value = parsedSpecies
+          console.log('[onMounted] species initialized to:', species.value)
+        } else {
+          console.warn(
+            '[onMounted] Parsed species not in speciesList:',
+            parsedSpecies,
+          )
+        }
       }
     } catch (error) {
-      console.error('Failed to parse parameters from localStorage:', error)
+      console.error('[onMounted] Failed to parse stored parameters:', error)
     }
+  } else {
+    console.log('[onMounted] No stored parameters found in localStorage.')
   }
 })
 
 // 计算属性，生成模型名称
 const modelName = computed(() => {
-  return `${aminoAcid.value}_${species.value}.pt`
+  const model = `${aminoAcid.value}_${species.value}.pt`
+  console.log('[computed] modelName updated to:', model)
+  return model
 })
 
 // 监听 aminoAcid 和 species 的变化，保存到 localStorage，并触发事件
@@ -79,11 +115,20 @@ watch([aminoAcid, species], () => {
   const parameters = {
     aminoAcid: aminoAcid.value,
     species: species.value,
+    model: modelName.value,
   }
-  localStorage.setItem('generationParameters', JSON.stringify(parameters))
-  console.log('Saved parameters to localStorage:', parameters)
 
-  // 更新模型名称
+  console.log(
+    '[watch] aminoAcid or species changed. Saving to localStorage:',
+    parameters,
+  )
+
+  localStorage.setItem('generationParameters', JSON.stringify(parameters))
+
+  console.log(
+    '[watch] Emitting updateModel event with modelName:',
+    modelName.value,
+  )
   emits('updateModel', modelName.value)
 })
 </script>
