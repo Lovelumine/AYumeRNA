@@ -11,7 +11,7 @@ import datetime
 app = Flask(__name__)
 
 # MinIO 配置
-MINIO_URL = 'http://minio.lumoxuan.cn'
+MINIO_URL = 'https://minio.lumoxuan.cn'
 MINIO_ACCESS_KEY = 'uv9Ey4hCgAeF9US8IvW7'
 MINIO_SECRET_KEY = 'EJxNuc7hJId6cW969JXcMtd14xs7d9wTmC17Mn5W'
 MINIO_BUCKET_NAME = 'ayumerna'
