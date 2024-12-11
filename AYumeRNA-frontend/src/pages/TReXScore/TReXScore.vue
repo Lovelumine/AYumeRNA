@@ -12,13 +12,23 @@
       <h3>Generation Parameters</h3>
       <p><strong>Amino Acid:</strong> {{ aminoAcid }}</p>
       <p><strong>Domain:</strong> {{ domain }}</p>
-      <p>
-        <strong>Reverse Codon:</strong> {{ generationParameters.reverseCodon }}
-      </p>
-      <p>
-        <strong>Sequence Count:</strong>
-        {{ generationParameters.sequenceCount }}
-      </p>
+
+      <!-- 用户选择反密码子 -->
+      <label for="reverse-codon">Select Reverse Codon:</label>
+      <select
+        id="reverse-codon"
+        v-model="selectedReverseCodon"
+        @change="onReverseCodonChange"
+        class="select-box"
+      >
+        <option
+          v-for="codon in reverseCodonOptions"
+          :key="codon"
+          :value="codon"
+        >
+          {{ codon }}
+        </option>
+      </select>
     </div>
 
     <button
@@ -65,7 +75,6 @@ import SockJS from 'sockjs-client'
 // 定义数据结构类型
 interface GenerationParameters {
   model: string
-  reverseCodon: string
   sequenceCount: number
 }
 
@@ -74,27 +83,29 @@ interface Sequence {
   trexScore: number | null
 }
 
-// 初始化变量
 const generationParameters = ref<GenerationParameters>({
   model: '',
-  reverseCodon: '',
   sequenceCount: 0,
 })
-const aminoAcid = ref<string>('') // 从 model 中解析出的 aminoAcid
-const domain = ref<string>('') // 从 model 中解析出的 domain
+const aminoAcid = ref<string>('')
+const domain = ref<string>('')
 const sequences = ref<Sequence[]>([])
-const wsMessages = ref<string[]>([]) // WebSocket 消息
-const taskSubmitted = ref<boolean>(false) // 任务是否已提交
-const resultDownloadUrl = ref<string | null>(null) // 下载结果的链接
+const wsMessages = ref<string[]>([])
+const taskSubmitted = ref<boolean>(false)
+const resultDownloadUrl = ref<string | null>(null)
 
-const wsUrl = '/sockjs/ws' // 替换为实际 WebSocket 地址
-const subscribeUrl = '/topic/progress/1' // 替换为实际订阅路径
+// 反密码子相关
+const reverseCodonOptions = ['TAA', 'TAG', 'TGA']
+const selectedReverseCodon = ref<string>(reverseCodonOptions[0]) // 默认选择第一个
+const reverseCodonStorageKeyPrefix = 'sequences_' // 为每个反密码子单独存储数据
 
-// 计算属性，判断是否需要重新计算
+// WebSocket相关配置
+const wsUrl = '/sockjs/ws'
+const subscribeUrl = '/topic/progress/1'
+
+// 判断是否需要重新计算
 const shouldRecalculate = computed(() => {
-  if (sequences.value.length === 0) {
-    return true
-  }
+  if (sequences.value.length === 0) return true
   for (const seq of sequences.value) {
     if (seq.trexScore === null || !isScoreAcceptable(seq.trexScore)) {
       return true
@@ -103,32 +114,114 @@ const shouldRecalculate = computed(() => {
   return false
 })
 
-// 判断 trexScore 是否符合条件的函数（请根据您的标准修改）
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function isScoreAcceptable(score: number): boolean {
-  // 在这里实现您的判断逻辑
-  // 例如：return score >= 0.8;
-  return true // 示例，默认返回 true
+  // 在这里根据需要修改判断逻辑
+  return true
 }
 
-// 将序列转换为 FA 格式
-const convertSequencesToFA = (): Blob => {
+// 将序列转换为FA格式文件
+function convertSequencesToFA(): Blob {
   const faContent = sequences.value
     .map((seq, index) => `>seq${index + 1}\n${seq.sequence}`)
     .join('\n')
   return new Blob([faContent], { type: 'text/plain' })
 }
 
-// 从 localStorage 加载数据
-const loadLocalStorageData = () => {
-  const parameters = localStorage.getItem('generationParameters')
-  const sequenceData = localStorage.getItem('sequences')
+// 根据反密码子获取本地存储key
+function getCodonStorageKey(codon: string) {
+  return `${reverseCodonStorageKeyPrefix}${codon}`
+}
 
+// 加载指定反密码子的本地缓存
+function loadSequencesForCodon(codon: string): boolean {
+  const codonKey = getCodonStorageKey(codon)
+  const seqData = localStorage.getItem(codonKey)
+  if (seqData) {
+    try {
+      const parsedSequences = JSON.parse(seqData) as Sequence[]
+      sequences.value = parsedSequences.map(seq => ({
+        sequence: seq.sequence,
+        trexScore: seq.trexScore ?? null,
+      }))
+      return true
+    } catch (error) {
+      console.error(`Error parsing sequences for ${codon}:`, error)
+    }
+  }
+  return false
+}
+
+// 存储指定反密码子的序列数据
+function storeSequencesForCodon(codon: string, seqs: Sequence[]) {
+  const codonKey = getCodonStorageKey(codon)
+  localStorage.setItem(codonKey, JSON.stringify(seqs))
+}
+
+// 当用户切换反密码子时调用
+function onReverseCodonChange() {
+  // 优先尝试从该反密码子的缓存中加载
+  if (!loadSequencesForCodon(selectedReverseCodon.value)) {
+    // 如果无缓存，则尝试使用默认的 'sequences' 数据作为初始数据
+    const defaultSeqData = localStorage.getItem('sequences')
+    if (defaultSeqData) {
+      try {
+        const parsedSequences = JSON.parse(defaultSeqData) as Sequence[]
+        sequences.value = parsedSequences.map(seq => ({
+          sequence: seq.sequence,
+          trexScore: seq.trexScore ?? null,
+        }))
+      } catch (error) {
+        console.error('Error parsing default sequences:', error)
+      }
+    }
+
+    // 此时如果依然没有数据，或者数据需要重新计算，则发起新请求
+    if (shouldRecalculate.value) {
+      rerunScoringForSelectedCodon()
+    } else {
+      console.log(
+        `Loaded default sequences for ${selectedReverseCodon.value}. No need to recalculate.`,
+      )
+    }
+  } else {
+    // 本地已有该反密码子的缓存数据
+    taskSubmitted.value = false
+    wsMessages.value = []
+    resultDownloadUrl.value = null
+
+    if (shouldRecalculate.value) {
+      rerunScoringForSelectedCodon()
+    } else {
+      console.log(
+        `Loaded cached sequences for ${selectedReverseCodon.value}. No need to recalculate.`,
+      )
+    }
+  }
+}
+
+// 需要针对当前反密码子重新计算时调用
+function rerunScoringForSelectedCodon() {
+  // 清空当前数据，准备重新请求打分
+  wsMessages.value = []
+  resultDownloadUrl.value = null
+  taskSubmitted.value = false
+
+  connectWebSocket()
+  submitTask()
+}
+
+// 从 localStorage 加载基本参数和默认序列
+function loadLocalStorageData() {
+  const parameters = localStorage.getItem('generationParameters')
   if (parameters) {
     try {
-      generationParameters.value = JSON.parse(
-        parameters,
-      ) as GenerationParameters
+      const parsedParams = JSON.parse(parameters) as {
+        model: string
+        sequenceCount: number
+      }
+      generationParameters.value.model = parsedParams.model
+      generationParameters.value.sequenceCount = parsedParams.sequenceCount
 
       const [parsedAminoAcid, parsedDomain] = generationParameters.value.model
         .replace('.pt', '')
@@ -140,6 +233,8 @@ const loadLocalStorageData = () => {
     }
   }
 
+  // 从默认的 'sequences' 中加载数据（作为初始数据源）
+  const sequenceData = localStorage.getItem('sequences')
   if (sequenceData) {
     try {
       const parsedSequences = JSON.parse(sequenceData) as Sequence[]
@@ -153,41 +248,42 @@ const loadLocalStorageData = () => {
   }
 }
 
-// 提交任务
-const submitTask = async () => {
-  if (
-    !aminoAcid.value ||
-    !domain.value ||
-    !generationParameters.value.reverseCodon
-  ) {
+// 提交任务，请确保 sequences 不为空（此时 sequences 已有默认值或缓存值）
+async function submitTask() {
+  if (!aminoAcid.value || !domain.value || !selectedReverseCodon.value) {
     console.warn('Required parameters are missing.')
+    return
+  }
+
+  // 如果没有任何序列数据，需要用户确认数据来源（原始代码中默认从 localStorage 中获取，如果还没有则需要用户生成）
+  if (sequences.value.length === 0) {
+    console.warn(
+      'Sequences are empty. Please ensure sequences are loaded or generated first.',
+    )
     return
   }
 
   const formData = new FormData()
   formData.append('aminoAcid', aminoAcid.value)
   formData.append('domain', domain.value)
-  formData.append('reverseCodon', generationParameters.value.reverseCodon)
+  formData.append('reverseCodon', selectedReverseCodon.value)
   formData.append('testFile', convertSequencesToFA(), 'test_sequences.fa')
 
   try {
     const response = await axios.post('/sequence/process', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      headers: { 'Content-Type': 'multipart/form-data' },
     })
     console.log('Response from server:', response)
     wsMessages.value = ['Task submitted successfully. Waiting for results...']
-    taskSubmitted.value = true // 标记任务已提交
+    taskSubmitted.value = true
   } catch (error) {
     console.error('Error submitting task:', error)
   }
 }
 
-// WebSocket 连接
-const connectWebSocket = () => {
+// 建立 WebSocket 连接
+function connectWebSocket() {
   const socket = new SockJS(wsUrl)
-
   const client = new Client({
     webSocketFactory: () => socket,
     reconnectDelay: 5000,
@@ -201,7 +297,7 @@ const connectWebSocket = () => {
         )
         if (resultUrlMatch) {
           const resultUrl = resultUrlMatch[1]
-          resultDownloadUrl.value = resultUrl // 设置下载链接
+          resultDownloadUrl.value = resultUrl
           await fetchAndReplaceSequences(resultUrl)
         }
       })
@@ -210,26 +306,23 @@ const connectWebSocket = () => {
       console.error('WebSocket STOMP error:', error)
     },
   })
-
   client.activate()
 }
 
 // 下载并替换序列数据
-const fetchAndReplaceSequences = async (url: string) => {
+async function fetchAndReplaceSequences(url: string) {
   try {
     const response = await axios.get<string>(url)
     const text = response.data
 
     const newSequences: Sequence[] = []
-
     const lines = text.split('\n')
-    // 假设 CSV 格式：index,score,sequence
+    // 假设 CSV 格式：index,score,sequence (第一行为表头)
     for (let i = 1; i < lines.length; i++) {
-      // 跳过表头
       const line = lines[i]
       if (line.trim() === '') continue
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const [indexStr, scoreStr, sequence] = line.split(',')
+      const [_indexStr, scoreStr, sequence] = line.split(',')
       const trexScore = parseFloat(scoreStr.trim())
       newSequences.push({
         sequence: sequence.trim(),
@@ -238,14 +331,15 @@ const fetchAndReplaceSequences = async (url: string) => {
     }
 
     sequences.value = newSequences
-    localStorage.setItem('sequences', JSON.stringify(newSequences))
+    // 缓存当前反密码子的结果
+    storeSequencesForCodon(selectedReverseCodon.value, newSequences)
   } catch (error) {
     console.error('Error fetching or replacing sequences:', error)
   }
 }
 
 // 下载选中结果
-const downloadSelectedResults = (selectedRows: Sequence[]) => {
+function downloadSelectedResults(selectedRows: Sequence[]) {
   if (!selectedRows.length) {
     alert('No rows selected to download.')
     return
@@ -267,8 +361,8 @@ const downloadSelectedResults = (selectedRows: Sequence[]) => {
   URL.revokeObjectURL(url)
 }
 
-// 提供下载功能
-const downloadResult = () => {
+// 下载全部结果
+function downloadResult() {
   if (!resultDownloadUrl.value) return
   const link = document.createElement('a')
   link.href = resultDownloadUrl.value
@@ -278,9 +372,12 @@ const downloadResult = () => {
   document.body.removeChild(link)
 }
 
-// 初始化
+// 初始化逻辑
 onMounted(() => {
+  // 先加载基本参数和默认序列数据
   loadLocalStorageData()
+
+  // 如果当前数据需要重新计算，则建立连接并提交任务
   if (shouldRecalculate.value) {
     connectWebSocket()
     if (!taskSubmitted.value) {
@@ -340,5 +437,10 @@ onMounted(() => {
 
 .message-item {
   margin: 5px 0;
+}
+
+.select-box {
+  margin-top: 10px;
+  padding: 5px;
 }
 </style>
