@@ -23,6 +23,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Comparator
 
 @Service
 class SequenceService(
@@ -103,12 +104,15 @@ class SequenceService(
         val (alignedThrSequences, conservedPositions) = performMultipleSequenceAlignment(thrSequences)
         messagingTemplate.convertAndSend("/topic/progress/$userId", "Template sequence alignment completed.")
 
+        // 生成共识序列(以便对测试序列进行快速对齐及打分)
+        val consensusSequence = generateConsensusSequence(alignedThrSequences)
+
         messagingTemplate.convertAndSend("/topic/progress/$userId", "Aligning and scoring test sequences...")
 
         val results = scoreTestSequences(
-            alignedThrSequences,
             conservedPositions,
             testSequences,
+            consensusSequence,
             userId
         )
 
@@ -119,75 +123,85 @@ class SequenceService(
         return resultsCsvPath
     }
 
+    /**
+     * 根据模板序列的对齐结果生成共识序列。
+     * 共识序列长度等于对齐结果中序列的长度。
+     * 对于保守位点，所有序列的该位点应当为相同的碱基，直接使用即可。
+     * 对于非保守位点，可以用'N'或最常见的碱基作为共识（此处使用'N'简化处理）。
+     */
+    private fun generateConsensusSequence(alignedThrSequences: Map<String, String>): RNASequence {
+        val sequenceLength = alignedThrSequences.values.first().length
+        val consensusBuilder = StringBuilder()
+        val seqValues = alignedThrSequences.values.toList()
+
+        for (i in 0 until sequenceLength) {
+            val columnChars = seqValues.map { it[i] }
+            val filteredChars = columnChars.filter { it != '-' }
+
+            val consensusChar = if (filteredChars.isEmpty()) {
+                'N' // 无实际碱基信息，用N代替
+            } else {
+                // 如果都相同，取其一
+                val distinct = filteredChars.toSet()
+                if (distinct.size == 1) {
+                    distinct.first()
+                } else {
+                    // 如果不保守，不做精细统计，直接用N表示不确定
+                    'N'
+                }
+            }
+            consensusBuilder.append(consensusChar)
+        }
+
+        return RNASequence(consensusBuilder.toString())
+    }
+
     private fun scoreTestSequences(
-        alignedThrSequences: Map<String, String>,
         conservedPositions: Set<Int>,
         testSequences: List<Pair<String, RNASequence>>,
+        consensusSequence: RNASequence,
         userId: Long
     ): List<Map<String, Any>> {
         val results = mutableListOf<Map<String, Any>>()
         val gapPenalty = -2
+        val substitutionMatrix = getRnaSubstitutionMatrix()
+        val gapPenaltyObj = SimpleGapPenalty(5, 2)
 
-        val thrSeqs = alignedThrSequences.map { (header, seqStr) ->
-            val seqWithoutGaps = seqStr.replace('-', 'N')
-            val rnaSeq = RNASequence(seqWithoutGaps)
-            rnaSeq.accession = AccessionID(header)
-            rnaSeq
-        }
+        consensusSequence.accession = AccessionID("consensus")
 
         for ((index, testPair) in testSequences.withIndex()) {
             val testHeader = testPair.first
             val testSeq = testPair.second
+            testSeq.accession = AccessionID(testHeader)
 
             try {
-                testSeq.accession = AccessionID(testHeader)
-
-                val combinedSequences = mutableListOf<RNASequence>()
-                combinedSequences.addAll(thrSeqs)
-                combinedSequences.add(testSeq)
-
-                val gapPenaltyObj = SimpleGapPenalty(5, 2)
-                val substitutionMatrix = getRnaSubstitutionMatrix()
-
-                val msa: Profile<RNASequence, NucleotideCompound> = Alignments.getMultipleSequenceAlignment(
-                    combinedSequences,
+                // 调用时注意参数顺序
+                val pairwiseResult = Alignments.getPairwiseAlignment(
+                    consensusSequence,
+                    testSeq,
                     Alignments.PairwiseSequenceAlignerType.GLOBAL,
-                    substitutionMatrix,
-                    gapPenaltyObj
+                    gapPenaltyObj,      // gap penalty参数在此处
+                    substitutionMatrix   // substitution matrix参数在最后
                 )
 
-                val alignedSequences = mutableMapOf<String, String>()
-                msa.alignedSequences.forEach { alignedSeq ->
-                    val header = alignedSeq.originalSequence.accession.id
-                    val seq = alignedSeq.toString()
-                    alignedSequences[header] = seq
-                }
-
-                val alignedTestSeq = alignedSequences[testHeader]
-
-                if (alignedTestSeq == null) {
-                    logger.error("Could not find aligned test sequence: $testHeader")
-                    continue
-                }
+                // 使用 alignedSequences 获取对齐结果
+                val alignedCons = pairwiseResult.alignedSequences[0].toString()
+                val alignedTest = pairwiseResult.alignedSequences[1].toString()
 
                 var score = 0.0
                 for (pos in conservedPositions) {
-                    val testBase = alignedTestSeq[pos]
-                    if (testBase == '-') {
-                        score += gapPenalty
-                        continue
-                    }
+                    if (pos >= alignedCons.length || pos >= alignedTest.length) continue
+                    val testBase = alignedTest[pos]
+                    val consensusBase = alignedCons[pos]
 
-                    val conservedBase = alignedThrSequences.values.first()[pos]
-                    if (testBase == conservedBase) {
-                        score += 1
-                    } else {
-                        score -= 1
+                    score += when {
+                        testBase == '-' -> gapPenalty
+                        testBase == consensusBase -> 1
+                        else -> -1
                     }
                 }
 
                 val normalizedScore = score / conservedPositions.size
-
                 results.add(
                     mapOf(
                         "Test_Sequence" to testHeader,
@@ -211,7 +225,6 @@ class SequenceService(
 
         return results
     }
-
     private fun readCsvSequences(filePath: String): List<Pair<String, RNASequence>> {
         val sequences = mutableListOf<Pair<String, RNASequence>>()
         Files.newBufferedReader(Paths.get(filePath)).use { reader ->
@@ -260,10 +273,8 @@ class SequenceService(
 
     private fun getRnaSubstitutionMatrix(): SubstitutionMatrix<NucleotideCompound> {
         val rnaCompounds = RNACompoundSet.getRNACompoundSet()
-
         val matchScore: Short = 1
         val mismatchScore: Short = -1
-
         return SimpleSubstitutionMatrix(rnaCompounds, matchScore, mismatchScore)
     }
 
