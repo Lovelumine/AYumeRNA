@@ -5,9 +5,10 @@
       generator
     </h2>
 
-    <!-- 引入 CodonInput 组件 -->
+    <!-- 用户输入模型组件 -->
     <CodonInput @updateModel="updateModel" />
 
+    <!-- 序列数量选择 -->
     <label for="sequence-count">Select Number of Sequences:</label>
     <select id="sequence-count" v-model="sequenceCount" class="select-box">
       <option v-for="count in sequenceOptions" :key="count" :value="count">
@@ -15,6 +16,7 @@
       </option>
     </select>
 
+    <!-- 生成按钮 -->
     <button class="generate-btn" @click="generateSequence">
       Generate Sequences
     </button>
@@ -23,67 +25,75 @@
       You can select and analyze the sequences in the table below.
     </p>
 
+    <!-- 显示结果的组件 -->
     <SequenceResult />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import axios from 'axios' // 用于发送请求
+import axios from 'axios'
 import CodonInput from './CodonInput.vue'
 import SequenceResult from './SequenceResult.vue'
 
+// 变量声明
 const sequenceCount = ref(100)
-const sequenceOptions = [10, 50, 100, 500, 1000] // 生成的数量选项
-const sequences = ref<string[]>([])
-const defaultReverseCodon = 'TAA' // 默认的反密码子
+const sequenceOptions = [10, 50, 100, 500, 1000] // 可选择的序列数量
+const sequences = ref<string[]>([]) // 保存生成的序列
+const defaultReverseCodon = 'TAA' // 默认反密码子
+const selectedModel = ref('') // 选中的模型名称
 
-// 模型名称（从 CodonInput.vue 更新）
-const selectedModel = ref('')
-
-// 更新模型名称的方法
+/**
+ * 更新模型名称
+ * @param {string} modelName
+ */
 function updateModel(modelName: string) {
-  console.log('Received modelName in parent:', modelName) // 检查是否收到模型名称
   selectedModel.value = modelName
 }
 
-// 保存参数到本地存储的方法
+/**
+ * 保存生成参数到本地存储
+ */
 function saveParametersToLocalStorage() {
   const parameters = {
     model: selectedModel.value,
-    reverseCodon: defaultReverseCodon, // 使用默认反密码子
+    reverseCodon: defaultReverseCodon,
     sequenceCount: sequenceCount.value,
   }
-
-  console.log('Saving parameters to localStorage:', parameters)
   localStorage.setItem('generationParameters', JSON.stringify(parameters))
 }
 
-// 生成序列并发送请求
+/**
+ * 生成序列并保存到本地存储
+ */
 async function generateSequence() {
   try {
-    // 保存当前生成参数到本地存储
+    // 保存生成参数
     saveParametersToLocalStorage()
 
-    // 使用 URLSearchParams 创建 x-www-form-urlencoded 格式的参数
+    // 发送请求参数
     const params = new URLSearchParams()
     params.append('model', selectedModel.value)
-    params.append('reverseCodon', defaultReverseCodon) // 使用默认反密码子
+    params.append('reverseCodon', defaultReverseCodon)
     params.append('sequenceCount', sequenceCount.value.toString())
 
-    // 打印调试信息
-    console.log('Sending request to /sample with params:', params.toString())
-
-    // 发送 POST 请求到 /sample
+    // 发送 POST 请求
     const response = await axios.post('/sample/process', params, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     })
 
-    // 从服务器响应中更新序列
+    // 更新序列
     sequences.value = response.data.sequences || []
-    console.log('Response:', response.data)
+
+    // 生成时间戳并保存到本地存储
+    const generationTimestamp = Date.now().toString()
+    localStorage.setItem('sequences', JSON.stringify(sequences.value))
+    localStorage.setItem('timestamp_sequences', generationTimestamp)
+
+    console.log(
+      'Sequences and timestamp saved successfully:',
+      generationTimestamp,
+    )
   } catch (error) {
     console.error('Error generating sequences:', error)
   }
@@ -91,8 +101,6 @@ async function generateSequence() {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@500&family=Playfair+Display:wght@700&display=swap');
-
 .generator {
   display: flex;
   flex-direction: column;
@@ -120,8 +128,8 @@ h2 {
 }
 
 h2 i {
-  margin-right: 10px; /* 图标与文字的间距 */
-  font-size: 1.6em; /* 图标大小 */
+  margin-right: 10px;
+  font-size: 1.6em;
 }
 
 .select-box {
