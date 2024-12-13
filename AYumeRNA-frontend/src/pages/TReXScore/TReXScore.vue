@@ -1,9 +1,108 @@
+<!-- src/pages/TReXScore/TRNACompatibilityEvaluator.vue -->
 <template>
   <div class="site--main">
-    <h2 class="title">tREX Score Analysis</h2>
+    <h2 class="title">tRNACompatibility Evaluator</h2>
     <p class="description">
-      This section analyzes the tREX scores for the selected sequences.
+      Welcome to the <strong>tRNACompatibility Evaluator</strong> analysis page.
+      Here, we focus on evaluating ordinary tRNA sequences (generated at the
+      first step) to determine their potential as suppressor tRNAs (sup-tRNAs)
+      using the tREX Score algorithm.
     </p>
+
+    <div class="info-box">
+      <h3>Overview</h3>
+      <p>
+        Previously, ordinary tRNA sequences were generated without special
+        suppressor capabilities. Now, in this second phase, we apply the tREX
+        Score algorithm to assess whether any of these tRNAs have the potential
+        to become sup-tRNAs, capable of reading through stop codons.
+      </p>
+
+      <details class="details-box">
+        <summary class="details-summary">
+          Show More About the First Step
+        </summary>
+        <div class="details-content">
+          <h4>Step 1: Generating Ordinary tRNA Sequences</h4>
+          <p>
+            In the first step, ordinary tRNA sequences were produced using
+            computational models and reference datasets. These sequences can
+            carry amino acids but are not specifically designed to suppress
+            termination codons at this stage. They form the initial pool from
+            which potential sup-tRNAs can be identified.
+          </p>
+        </div>
+      </details>
+    </div>
+
+    <div class="info-box">
+      <h3>Step 2: Evaluating tRNAs with tREX Score</h3>
+      <p>
+        To determine if any of the ordinary tRNA sequences can function as
+        sup-tRNAs, we use the tREX Score algorithm. This involves aligning the
+        candidate tRNAs against consensus templates derived from reference tRNA
+        datasets.
+      </p>
+      <details class="details-box">
+        <summary class="details-summary">
+          Show More About the Second Step
+        </summary>
+        <p>The reference datasets for scoring are:</p>
+        <ul>
+          <li>
+            For CTA codon:
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/CTA.csv"
+              target="_blank"
+              >CTA.csv</a
+            >
+          </li>
+          <li>
+            For CUA codon:
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/CUA.csv"
+              target="_blank"
+              >CUA.csv</a
+            >
+          </li>
+        </ul>
+        <p>
+          These files contain template tRNA sequences used to generate a
+          consensus template and identify conserved positions.
+        </p>
+
+        <p>
+          After performing a multiple sequence alignment (MSA) on the templates,
+          we define:
+        </p>
+        <img
+          src="https://minio.lumoxuan.cn/ayumerna/picture/formula_1.png"
+          alt="Formula 1"
+          class="formula-image-1"
+        />
+
+        <p>
+          For each test sequence, after aligning it to the consensus sequence,
+          each conserved position <math>i ∈ C</math> is scored as follows:
+        </p>
+        <img
+          src="https://minio.lumoxuan.cn/ayumerna/picture/formula_2.png"
+          alt="Formula 2"
+          class="formula-image-2"
+        />
+
+        <p>Finally, the tREX Score is computed as:</p>
+        <img
+          src="https://minio.lumoxuan.cn/ayumerna/picture/formula_3.png"
+          alt="Formula 3"
+          class="formula-image-3"
+        />
+      </details>
+      <p>
+        A positive tREX Score indicates that the tRNA might possess suppressor
+        properties, potentially decoding stop codons and acting as a sup-tRNA.
+      </p>
+    </div>
 
     <div class="parameters-container">
       <h3>Generation Parameters</h3>
@@ -27,10 +126,7 @@
       </select>
     </div>
 
-    <button v-if="!taskSubmitted" @click="submitTask" class="submit-btn">
-      Submit Task
-    </button>
-    <p v-else-if="taskSubmitted" class="task-status">
+    <p v-if="taskSubmitted" class="task-status">
       Task has been submitted. Waiting for results...
     </p>
 
@@ -55,22 +151,22 @@
 </template>
 
 <script setup lang="ts">
-import TableWithAction from './TableWithAction'
+import TableWithAction from './TableWithAction' // 根据实际路径调整
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
+import type { Sequence, GenerationParameters } from './logic'
+import {
+  getCodonStorageKey,
+  getCodonTimestampKey,
+  loadDefaultSequences,
+  fetchAndReplaceSequences,
+  submitTask,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  lastSubmittedCodon,
+} from './logic'
 
-interface GenerationParameters {
-  model: string
-  sequenceCount: number
-}
-
-interface Sequence {
-  sequence: string
-  trexScore: number | null
-}
-
+// 定义响应式变量
 const generationParameters = ref<GenerationParameters>({
   model: '',
   sequenceCount: 0,
@@ -86,167 +182,10 @@ const resultDownloadUrl = ref<string | null>(null)
 const reverseCodonOptions = ['CUA', 'UUA']
 const selectedReverseCodon = ref<string>(reverseCodonOptions[0])
 
-// 用于记录本次提交是针对哪个codon的
-let lastSubmittedCodon: string | null = null
-
 const wsUrl = '/sockjs/ws'
 const subscribeUrl = '/topic/progress/1'
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function isScoreAcceptable(score: number): boolean {
-  return true
-}
-
-function getCodonStorageKey(codon: string) {
-  return `sequences_${codon}`
-}
-
-function getCodonTimestampKey(codon: string) {
-  return `timestamp_${codon}`
-}
-
-function sequencesToFA(seqArr: Sequence[]): string {
-  return seqArr
-    .map((seq, index) => `>seq${index + 1}\n${seq.sequence}`)
-    .join('\n')
-}
-
-// 尝试加载默认 sequences（未打分）
-function loadDefaultSequences(): boolean {
-  const defaultSeqDataStr = localStorage.getItem('sequences')
-  if (!defaultSeqDataStr) return false
-  try {
-    const parsed = JSON.parse(defaultSeqDataStr) as Sequence[]
-    sequences.value = parsed.map(s => ({
-      sequence: s.sequence,
-      trexScore: s.trexScore ?? null,
-    }))
-    console.log(`Loaded default sequences, length=${parsed.length}`)
-    return true
-  } catch (error) {
-    console.error('Error parsing default sequences:', error)
-    return false
-  }
-}
-
-// 提交任务使用当前 sequences
-function submitTask() {
-  console.log('submitTask called.')
-  if (sequences.value.length === 0) {
-    console.log('No sequences available, no submit.')
-    return
-  }
-
-  // 记录本次提交的codon
-  lastSubmittedCodon = selectedReverseCodon.value
-
-  const formData = new FormData()
-  formData.append('aminoAcid', aminoAcid.value)
-  formData.append('domain', domain.value)
-  formData.append('reverseCodon', selectedReverseCodon.value)
-  formData.append(
-    'testFile',
-    new Blob([sequencesToFA(sequences.value)], { type: 'text/plain' }),
-    'test_sequences.fa',
-  )
-
-  axios
-    .post('/sequence/process', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    .then(response => {
-      console.log('Response from server:', response)
-      wsMessages.value = ['Task submitted successfully. Waiting for results...']
-      taskSubmitted.value = true
-    })
-    .catch(error => {
-      console.error('Error submitting task:', error)
-    })
-}
-
-// 连接 WebSocket
-function connectWebSocket() {
-  console.log('Connecting WebSocket...')
-  const socket = new SockJS(wsUrl)
-  const client = new Client({
-    webSocketFactory: () => socket,
-    reconnectDelay: 5000,
-    onConnect: () => {
-      console.log('WebSocket connected.')
-      client.subscribe(subscribeUrl, async message => {
-        const { body } = message
-        console.log('Received WS message:', body)
-        wsMessages.value = [body]
-
-        const resultUrlMatch = body.match(
-          /results uploaded:\s*(https?:\/\/\S+)/,
-        )
-        if (resultUrlMatch) {
-          const resultUrl = resultUrlMatch[1]
-          const proxiedUrl = resultUrl.replace(
-            'https://minio.lumoxuan.cn/ayumerna',
-            '/ayumerna',
-          )
-          console.log('Fetching new sequences from:', proxiedUrl)
-          await fetchAndReplaceSequences(proxiedUrl)
-          taskSubmitted.value = false
-        }
-      })
-    },
-    onStompError: error => {
-      console.error('WebSocket STOMP error:', error)
-    },
-  })
-  client.activate()
-}
-
-// fetchAndReplaceSequences完成后仅更新lastSubmittedCodon对应的数据
-async function fetchAndReplaceSequences(url: string) {
-  console.log('fetchAndReplaceSequences from:', url)
-  try {
-    const response = await axios.get<string>(url)
-    const text = response.data
-
-    const newSequences: Sequence[] = []
-    const lines = text.split('\n')
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim()
-      if (line === '') continue
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const [testSeq, scoreStr, sequence] = line.split(',')
-      const trexScore = parseFloat(scoreStr.trim())
-      newSequences.push({ sequence: sequence.trim(), trexScore: trexScore })
-    }
-
-    console.log('New scored sequences fetched:', JSON.stringify(newSequences))
-    sequences.value = newSequences
-
-    const currentTimestampSequences = localStorage.getItem(
-      'timestamp_sequences',
-    )
-    if (currentTimestampSequences && lastSubmittedCodon) {
-      // 只更新本次提交对应的codon数据，不影响其他codon
-      localStorage.setItem(
-        getCodonStorageKey(lastSubmittedCodon),
-        JSON.stringify(newSequences),
-      )
-      localStorage.setItem(
-        getCodonTimestampKey(lastSubmittedCodon),
-        currentTimestampSequences,
-      )
-      console.log(
-        'Updated codon scored sequences and timestamp for',
-        lastSubmittedCodon,
-      )
-
-      // 重置lastSubmittedCodon，避免下次不匹配
-      lastSubmittedCodon = null
-    }
-  } catch (error) {
-    console.error('Error fetching or replacing sequences:', error)
-  }
-}
-
+// 下载选中的结果
 function downloadSelectedResults(selectedRows: Sequence[]) {
   if (!selectedRows.length) {
     alert('No rows selected to download.')
@@ -270,6 +209,7 @@ function downloadSelectedResults(selectedRows: Sequence[]) {
   URL.revokeObjectURL(url)
 }
 
+// 下载全部结果
 function downloadResult() {
   if (!resultDownloadUrl.value) return
   console.log('Downloading result from:', resultDownloadUrl.value)
@@ -281,7 +221,47 @@ function downloadResult() {
   document.body.removeChild(link)
 }
 
-// 切换codon时逻辑
+let clientInstance: Client | null = null
+
+// 连接 WebSocket
+function connectWebSocket() {
+  console.log('Connecting WebSocket...')
+  const socket = new SockJS(wsUrl)
+  clientInstance = new Client({
+    webSocketFactory: () => socket,
+    reconnectDelay: 5000,
+    onConnect: () => {
+      console.log('WebSocket connected.')
+      if (clientInstance) {
+        clientInstance.subscribe(subscribeUrl, async message => {
+          const { body } = message
+          console.log('Received WS message:', body)
+          wsMessages.value = [body]
+
+          const resultUrlMatch = body.match(
+            /results uploaded:\s*(https?:\/\/\S+)/,
+          )
+          if (resultUrlMatch) {
+            const resultUrl = resultUrlMatch[1]
+            const proxiedUrl = resultUrl.replace(
+              'https://minio.lumoxuan.cn/ayumerna',
+              '/ayumerna',
+            )
+            console.log('Fetching new sequences from:', proxiedUrl)
+            await fetchAndReplaceSequences(proxiedUrl, sequences)
+            taskSubmitted.value = false
+          }
+        })
+      }
+    },
+    onStompError: error => {
+      console.error('WebSocket STOMP error:', error)
+    },
+  })
+  clientInstance.activate()
+}
+
+// 反向密码子切换时的逻辑
 function onReverseCodonChange() {
   console.log(`Changing reverse codon to ${selectedReverseCodon.value}`)
 
@@ -306,11 +286,17 @@ function onReverseCodonChange() {
       )
 
       if (!codonTimestamp) {
-        // 没有codon timestamp，表示需要更新数据，用默认 sequences
         console.log('No codon timestamp, submitTask using default sequences.')
-        if (loadDefaultSequences()) {
-          connectWebSocket()
-          submitTask()
+        if (loadDefaultSequences(sequences)) {
+          submitTask(
+            aminoAcid.value,
+            domain.value,
+            selectedReverseCodon.value,
+            sequences,
+            wsMessages,
+            taskSubmitted,
+            connectWebSocket,
+          )
         } else {
           console.log('No default sequences, do nothing.')
         }
@@ -318,18 +304,23 @@ function onReverseCodonChange() {
         currentTimestampSequences &&
         currentTimestampSequences !== codonTimestamp
       ) {
-        // 时间戳不一致，用默认 sequences 提交
         console.log(
           'timestamp_sequences differs from codon timestamp, submitTask using default sequences.',
         )
-        if (loadDefaultSequences()) {
-          connectWebSocket()
-          submitTask()
+        if (loadDefaultSequences(sequences)) {
+          submitTask(
+            aminoAcid.value,
+            domain.value,
+            selectedReverseCodon.value,
+            sequences,
+            wsMessages,
+            taskSubmitted,
+            connectWebSocket,
+          )
         } else {
           console.log('No default sequences, do nothing.')
         }
       } else {
-        // 时间戳一致，无需提交
         console.log('Codon sequences and timestamp match, no submit.')
       }
     } catch (error) {
@@ -339,14 +330,21 @@ function onReverseCodonChange() {
       )
     }
   } else {
-    // 无codon打分序列，看是否有默认序列
-    const hasDefault = loadDefaultSequences()
+    // 无codon打分序列
+    const hasDefault = loadDefaultSequences(sequences)
     if (hasDefault) {
       console.log(
         'No codon scored sequences, but have default sequences, submitTask.',
       )
-      connectWebSocket()
-      submitTask()
+      submitTask(
+        aminoAcid.value,
+        domain.value,
+        selectedReverseCodon.value,
+        sequences,
+        wsMessages,
+        taskSubmitted,
+        connectWebSocket,
+      )
     } else {
       console.log('No sequences at all, do nothing.')
     }
@@ -386,9 +384,8 @@ onMounted(() => {
     selectedReverseCodon.value = reverseCodonOptions[0]
   }
 
-  const hasDefault = loadDefaultSequences()
+  const hasDefault = loadDefaultSequences(sequences)
   if (!hasDefault) {
-    // 没有 sequences，不提交也不操作
     console.log('No sequences found, do nothing.')
     return
   }
@@ -398,11 +395,17 @@ onMounted(() => {
     getCodonTimestampKey(selectedReverseCodon.value),
   )
 
-  // 初次进入页面对比timestamp
   if (!codonTimestamp) {
     console.log('No codon timestamp, submitTask using default sequences.')
-    connectWebSocket()
-    submitTask()
+    submitTask(
+      aminoAcid.value,
+      domain.value,
+      selectedReverseCodon.value,
+      sequences,
+      wsMessages,
+      taskSubmitted,
+      connectWebSocket,
+    )
   } else if (
     currentTimestampSequences &&
     currentTimestampSequences !== codonTimestamp
@@ -410,8 +413,15 @@ onMounted(() => {
     console.log(
       'timestamp_sequences differs from codon timestamp, submitTask using default sequences.',
     )
-    connectWebSocket()
-    submitTask()
+    submitTask(
+      aminoAcid.value,
+      domain.value,
+      selectedReverseCodon.value,
+      sequences,
+      wsMessages,
+      taskSubmitted,
+      connectWebSocket,
+    )
   } else {
     console.log('Everything matches, try loading codon scored sequences.')
     const codonSeqData = localStorage.getItem(
@@ -443,16 +453,61 @@ onMounted(() => {
 <style scoped>
 .site--main {
   padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+
+  margin: 0 auto;
 }
 
-.parameters-container,
-.sequences-container {
+.title {
+  font-size: 2.5em;
+  margin-bottom: 10px;
+  text-align: center;
+  color: #333;
+}
+
+.description {
+  font-size: 1.2em;
+  text-align: center;
+  margin-bottom: 30px;
+  color: #555;
+}
+
+.info-box {
+  background: #f7f7f7;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
   margin-bottom: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.parameters-container p,
-.sequences-container ul {
-  margin: 10px 0;
+.parameters-container {
+  background: #f7f7f7;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.parameters-container h3 {
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.parameters-container p {
+  margin: 8px 0;
+  color: #555;
+}
+
+.select-box {
+  padding: 8px;
+  margin-top: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  width: 100%;
+  max-width: 200px;
 }
 
 .submit-btn,
@@ -460,11 +515,14 @@ onMounted(() => {
   background-color: #007bff;
   color: white;
   border: none;
-  padding: 10px 20px;
+  padding: 12px 24px;
   cursor: pointer;
   border-radius: 5px;
   font-weight: bold;
+  transition: background-color 0.3s ease;
   margin: 10px 0;
+  display: block;
+  width: fit-content;
 }
 
 .submit-btn:hover,
@@ -475,6 +533,7 @@ onMounted(() => {
 .task-status {
   color: green;
   font-weight: bold;
+  margin-top: 10px;
 }
 
 .message-container {
@@ -482,14 +541,62 @@ onMounted(() => {
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   padding: 16px;
+  margin-top: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.message-container h3 {
+  margin-top: 0;
+  color: #333;
 }
 
 .message-item {
   margin: 5px 0;
+  color: #555;
 }
 
-.select-box {
+.details-box {
   margin-top: 10px;
-  padding: 5px;
+  cursor: pointer;
+}
+
+.details-summary {
+  font-weight: bold;
+  color: #007bff;
+  outline: none;
+  font-size: 1em;
+}
+
+.details-summary:hover {
+  text-decoration: underline;
+}
+
+.details-content {
+  margin-top: 10px;
+  color: #555;
+}
+
+.formula-image-1 {
+  display: block;
+  margin: 10px auto;
+  height: auto;
+  max-width: 70%; /* 根据图片原比例缩放 */
+  width: auto;
+}
+
+.formula-image-2 {
+  display: block;
+  margin: 10px auto;
+  height: auto;
+  max-width: 25%; /* 根据图片原比例缩放 */
+  width: auto;
+}
+
+.formula-image-3 {
+  display: block;
+  margin: 10px auto;
+  height: auto;
+  max-width: 30%; /* 根据图片原比例缩放 */
+  width: auto;
 }
 </style>
