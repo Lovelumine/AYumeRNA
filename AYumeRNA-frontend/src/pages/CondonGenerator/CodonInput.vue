@@ -1,6 +1,6 @@
 <template>
   <div class="codon-input">
-    <label for="amino-acid">Select Amino Acid:</label>
+    <label for="amino-acid">Select Anticodon:</label>
     <select v-model="aminoAcid" id="amino-acid" class="dropdown">
       <option v-for="acid in aminoAcids" :key="acid" :value="acid">
         {{ acid }}
@@ -24,29 +24,12 @@ const emits = defineEmits(['updateModel'])
 
 // Mock data
 const aminoAcids = [
-  'Alanine',
-  'Arginine',
-  'Asparagine',
-  'Aspartic acid',
-  'Cysteine',
-  'Glutamine',
-  'Glutamic acid',
-  'Glycine',
-  'Histidine',
-  'Isoleucine',
-  'Leucine',
-  'Lysine',
-  'Methionine',
-  'Phenylalanine',
-  'Proline',
-  'Serine',
-  'Threonine',
-  'Tryptophan',
-  'Tyrosine',
-  'Valine',
+  'TCA',
+  'TTA',
+  'CTA',
 ]
 
-const speciesList = ['Eukaryota', 'Bacteria', 'Archaea']
+const speciesList = ['All','Eukaryota', 'Bacteria', 'Archaea']
 
 // 定义状态变量
 const aminoAcid = ref(aminoAcids[0])

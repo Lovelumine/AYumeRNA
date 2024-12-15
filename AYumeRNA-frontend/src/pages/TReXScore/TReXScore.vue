@@ -3,110 +3,149 @@
   <div class="site--main">
     <h2 class="title">tRNACompatibility Evaluator</h2>
     <p class="description">
-      Welcome to the <strong>tRNACompatibility Evaluator</strong> analysis page.
-      Here, we focus on evaluating ordinary tRNA sequences (generated at the
-      first step) to determine their potential as suppressor tRNAs (sup-tRNAs)
-      using the tREX Score algorithm.
+      Welcome to the <strong>tRNACompatibility Evaluator</strong>. In the first step, we used AI to generate novel sup-tRNA sequences. Now, we will evaluate these sequences to determine whether they can carry specific amino acids and read through stop codons.
     </p>
 
     <div class="info-box">
-      <h3>Overview</h3>
+  <h3>Overview</h3>
+  <p>
+    In the first step, sup-tRNA sequences with special suppressor capabilities were generated using AI. Now, in this second phase, we apply the tREX Score algorithm to evaluate these tRNAs and determine if they can carry specific amino acids and read through stop codons.
+  </p>
+
+  <details class="details-box">
+    <summary class="details-summary">
+      Show More About the First Step
+    </summary>
+    <div class="details-content">
+      <h4>Step 1: Generating sup-tRNA Sequences</h4>
       <p>
-        Previously, ordinary tRNA sequences were generated without special
-        suppressor capabilities. Now, in this second phase, we apply the tREX
-        Score algorithm to assess whether any of these tRNAs have the potential
-        to become sup-tRNAs, capable of reading through stop codons.
-      </p>
-
-      <details class="details-box">
-        <summary class="details-summary">
-          Show More About the First Step
-        </summary>
-        <div class="details-content">
-          <h4>Step 1: Generating Ordinary tRNA Sequences</h4>
-          <p>
-            In the first step, ordinary tRNA sequences were produced using
-            computational models and reference datasets. These sequences can
-            carry amino acids but are not specifically designed to suppress
-            termination codons at this stage. They form the initial pool from
-            which potential sup-tRNAs can be identified.
-          </p>
-        </div>
-      </details>
-    </div>
-
-    <div class="info-box">
-      <h3>Step 2: Evaluating tRNAs with tREX Score</h3>
-      <p>
-        To determine if any of the ordinary tRNA sequences can function as
-        sup-tRNAs, we use the tREX Score algorithm. This involves aligning the
-        candidate tRNAs against consensus templates derived from reference tRNA
-        datasets.
-      </p>
-      <details class="details-box">
-        <summary class="details-summary">
-          Show More About the Second Step
-        </summary>
-        <p>The reference datasets for scoring are:</p>
-        <ul>
-          <li>
-            For CTA codon:
-            <a
-              href="https://minio.lumoxuan.cn/ayumerna/model/CTA.csv"
-              target="_blank"
-              >CTA.csv</a
-            >
-          </li>
-          <li>
-            For CUA codon:
-            <a
-              href="https://minio.lumoxuan.cn/ayumerna/model/CUA.csv"
-              target="_blank"
-              >CUA.csv</a
-            >
-          </li>
-        </ul>
-        <p>
-          These files contain template tRNA sequences used to generate a
-          consensus template and identify conserved positions.
-        </p>
-
-        <p>
-          After performing a multiple sequence alignment (MSA) on the templates,
-          we define:
-        </p>
-        <img
-          src="https://minio.lumoxuan.cn/ayumerna/picture/formula_1.png"
-          alt="Formula 1"
-          class="formula-image-1"
-        />
-
-        <p>
-          For each test sequence, after aligning it to the consensus sequence,
-          each conserved position <math>i ∈ C</math> is scored as follows:
-        </p>
-        <img
-          src="https://minio.lumoxuan.cn/ayumerna/picture/formula_2.png"
-          alt="Formula 2"
-          class="formula-image-2"
-        />
-
-        <p>Finally, the tREX Score is computed as:</p>
-        <img
-          src="https://minio.lumoxuan.cn/ayumerna/picture/formula_3.png"
-          alt="Formula 3"
-          class="formula-image-3"
-        />
-      </details>
-      <p>
-        A positive tREX Score indicates that the tRNA might possess suppressor
-        properties, potentially decoding stop codons and acting as a sup-tRNA.
+        In the first step, computational models and reference datasets were used to generate new sup-tRNA sequences with potential stop codon suppression capabilities. At this stage, the specific amino acids they carry were not yet determined. These sequences serve as candidates for further evaluation in this phase.
       </p>
     </div>
+  </details>
+</div>
 
-    <div class="parameters-container">
+<div class="info-box">
+  <h3>Step 2: Evaluating tRNAs with tREX Score</h3>
+  <p>
+    To determine whether the generated sup-tRNA sequences can carry specific amino acids and suppress stop codons, we use the tREX Score algorithm. This process aligns candidate tRNAs against consensus templates derived from reference tRNA datasets.
+  </p>
+  <details class="details-box">
+    <summary class="details-summary">
+      Show More About the Second Step
+    </summary>
+    <p>The reference datasets for scoring are:</p>
+    <ul>
+      <li>
+        Ala (Alanine):
+        <a
+          href="https://minio.lumoxuan.cn/ayumerna/model/Ala.csv"
+          target="_blank"
+          >Ala.csv</a
+        >
+      </li>
+      <li>
+        Arg (Arginine):
+        <a
+          href="https://minio.lumoxuan.cn/ayumerna/model/Arg.csv"
+          target="_blank"
+          >Arg.csv</a
+        >
+      </li>
+      <li>
+        Asn (Asparagine):
+        <a
+          href="https://minio.lumoxuan.cn/ayumerna/model/Asn.csv"
+          target="_blank"
+          >Asn.csv</a
+        >
+      </li>
+      <li>
+        Asp (Aspartic Acid):
+        <a
+          href="https://minio.lumoxuan.cn/ayumerna/model/Asp.csv"
+          target="_blank"
+          >Asp.csv</a
+        >
+      </li>
+      <li>
+        Cys (Cysteine):
+        <a
+          href="https://minio.lumoxuan.cn/ayumerna/model/Cys.csv"
+          target="_blank"
+          >Cys.csv</a
+        >
+      </li>
+      <li>
+        Gly (Glycine):
+        <a
+          href="https://minio.lumoxuan.cn/ayumerna/model/Gly.csv"
+          target="_blank"
+          >Gly.csv</a
+        >
+      </li>
+      <li>
+        His (Histidine):
+        <a
+          href="https://minio.lumoxuan.cn/ayumerna/model/His.csv"
+          target="_blank"
+          >His.csv</a
+        >
+      </li>
+      <li>
+        Trp (Tryptophan):
+        <a
+          href="https://minio.lumoxuan.cn/ayumerna/model/Trp.csv"
+          target="_blank"
+          >Trp.csv</a
+        >
+      </li>
+      <li>
+        Val (Valine):
+        <a
+          href="https://minio.lumoxuan.cn/ayumerna/model/Val.csv"
+          target="_blank"
+          >Val.csv</a
+        >
+      </li>
+    </ul>
+    <p>
+      These files contain template tRNA sequences used to generate a consensus template and identify conserved positions.
+    </p>
+
+    <p>
+      After performing a multiple sequence alignment (MSA) on the templates, we define:
+    </p>
+    <img
+      src="https://minio.lumoxuan.cn/ayumerna/picture/formula_1.png"
+      alt="Formula 1"
+      class="formula-image-1"
+    />
+
+    <p>
+      For each test sequence, after aligning it to the consensus sequence, each conserved position <math>i ∈ C</math> is scored as follows:
+    </p>
+    <img
+      src="https://minio.lumoxuan.cn/ayumerna/picture/formula_2.png"
+      alt="Formula 2"
+      class="formula-image-2"
+    />
+
+    <p>Finally, the tREX Score is computed as:</p>
+    <img
+      src="https://minio.lumoxuan.cn/ayumerna/picture/formula_3.png"
+      alt="Formula 3"
+      class="formula-image-3"
+    />
+  </details>
+  <p>
+    A positive tREX Score indicates that the tRNA may carry a specific amino acid and possess suppressor properties, making it a true sup-tRNA capable of decoding stop codons.
+  </p>
+</div>
+
+<div class="parameters-container">
       <h3>Generation Parameters</h3>
-      <p><strong>Amino Acid:</strong> {{ aminoAcid }}</p>
+      <p><strong>Anticodon:</strong> {{ aminoAcid }}</p>
       <p><strong>Domain:</strong> {{ domain }}</p>
 
       <label for="reverse-codon">Select Reverse Codon:</label>
@@ -179,7 +218,7 @@ const wsMessages = ref<string[]>([])
 const taskSubmitted = ref<boolean>(false)
 const resultDownloadUrl = ref<string | null>(null)
 
-const reverseCodonOptions = ['CUA', 'UUA']
+const reverseCodonOptions = ['Ala','Arg','Asn','Asp','Cys','Gly','Trp','His','Val']
 const selectedReverseCodon = ref<string>(reverseCodonOptions[0])
 
 const wsUrl = '/sockjs/ws'

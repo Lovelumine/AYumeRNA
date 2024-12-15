@@ -18,34 +18,34 @@ export default defineConfig({
   server: {
     proxy: {
       '/sample': {
-        target: 'http://127.0.0.1:36243',
+        target: 'http://223.82.75.77:36243',
         changeOrigin: true,
       },
       '/info': {
-        target: 'http://127.0.0.1:36243',
+        target: 'http://223.82.75.77:36243',
         changeOrigin: true,
       },
       '/ws': {
-        target: 'http://127.0.0.1:36243',
+        target: 'http://223.82.75.77:36243',
         ws: true,
         changeOrigin: true,
       },
       '/topic/progress': {
-        target: 'http://127.0.0.1:36243',
+        target: 'http://223.82.75.77:36243',
         ws: true,
         changeOrigin: true,
       },
       '/sockjs/ws': {
-        target: 'http://127.0.0.1:36243',
+        target: 'http://223.82.75.77:36243',
         ws: true,
         changeOrigin: true,
       },
       '/sequence/process': {
-        target: 'http://127.0.0.1:36243',
+        target: 'http://223.82.75.77:36243',
         changeOrigin: true,
       },
       '/r2dt/run': {
-        target: 'http://223.82.75.76:2002',
+        target: 'http://127.0.0.1:2002',
         changeOrigin: true,
       },
       // 新增反向代理规则，将 /ayumerna 转发到 https://minio.lumoxuan.cn
