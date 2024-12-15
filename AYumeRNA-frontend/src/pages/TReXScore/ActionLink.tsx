@@ -10,22 +10,20 @@ const ActionLink = defineComponent({
     },
   },
   setup(props) {
-    const router = useRouter() // 使用 Vue Router
+    const router = useRouter()
 
     const handleClick = (event: Event) => {
-      event.preventDefault() // 防止默认的超链接行为
+      event.preventDefault()
       console.log('VisualizationAnalysis clicked for sequence:', props.sequence)
 
-      // 将序列保存到本地存储中
       localStorage.setItem(
         'analyzedSequence',
         JSON.stringify({ sequence: props.sequence }),
       )
       console.log('Sequence saved for analysis:', props.sequence)
 
-      // 跳转到 /visualization
-      router.push('/visualization').then(() => {
-        console.log('Navigated to /visualization')
+      router.push('/visualization/secondary-structure').then(() => {
+        console.log('Navigated to /visualization/secondary-structure')
       })
     }
 

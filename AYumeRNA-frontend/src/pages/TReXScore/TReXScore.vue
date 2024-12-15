@@ -1,19 +1,114 @@
+<!-- src/pages/TReXScore/TRNACompatibilityEvaluator.vue -->
 <template>
   <div class="site--main">
-    <h2 class="title">tREX Score Analysis</h2>
+    <h2 class="title">tRNACompatibility Evaluator</h2>
     <p class="description">
-      This section analyzes the tREX scores for the selected sequences. The tREX
-      score helps to assess the quality of the sequences based on their
-      similarity to template sequences.
+      Welcome to the <strong>tRNACompatibility Evaluator</strong> analysis page.
+      Here, we focus on evaluating ordinary tRNA sequences (generated at the
+      first step) to determine their potential as suppressor tRNAs (sup-tRNAs)
+      using the tREX Score algorithm.
     </p>
 
-    <!-- 配置展示 -->
+    <div class="info-box">
+      <h3>Overview</h3>
+      <p>
+        Previously, ordinary tRNA sequences were generated without special
+        suppressor capabilities. Now, in this second phase, we apply the tREX
+        Score algorithm to assess whether any of these tRNAs have the potential
+        to become sup-tRNAs, capable of reading through stop codons.
+      </p>
+
+      <details class="details-box">
+        <summary class="details-summary">
+          Show More About the First Step
+        </summary>
+        <div class="details-content">
+          <h4>Step 1: Generating Ordinary tRNA Sequences</h4>
+          <p>
+            In the first step, ordinary tRNA sequences were produced using
+            computational models and reference datasets. These sequences can
+            carry amino acids but are not specifically designed to suppress
+            termination codons at this stage. They form the initial pool from
+            which potential sup-tRNAs can be identified.
+          </p>
+        </div>
+      </details>
+    </div>
+
+    <div class="info-box">
+      <h3>Step 2: Evaluating tRNAs with tREX Score</h3>
+      <p>
+        To determine if any of the ordinary tRNA sequences can function as
+        sup-tRNAs, we use the tREX Score algorithm. This involves aligning the
+        candidate tRNAs against consensus templates derived from reference tRNA
+        datasets.
+      </p>
+      <details class="details-box">
+        <summary class="details-summary">
+          Show More About the Second Step
+        </summary>
+        <p>The reference datasets for scoring are:</p>
+        <ul>
+          <li>
+            For CTA codon:
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/CTA.csv"
+              target="_blank"
+              >CTA.csv</a
+            >
+          </li>
+          <li>
+            For CUA codon:
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/CUA.csv"
+              target="_blank"
+              >CUA.csv</a
+            >
+          </li>
+        </ul>
+        <p>
+          These files contain template tRNA sequences used to generate a
+          consensus template and identify conserved positions.
+        </p>
+
+        <p>
+          After performing a multiple sequence alignment (MSA) on the templates,
+          we define:
+        </p>
+        <img
+          src="https://minio.lumoxuan.cn/ayumerna/picture/formula_1.png"
+          alt="Formula 1"
+          class="formula-image-1"
+        />
+
+        <p>
+          For each test sequence, after aligning it to the consensus sequence,
+          each conserved position <math>i ∈ C</math> is scored as follows:
+        </p>
+        <img
+          src="https://minio.lumoxuan.cn/ayumerna/picture/formula_2.png"
+          alt="Formula 2"
+          class="formula-image-2"
+        />
+
+        <p>Finally, the tREX Score is computed as:</p>
+        <img
+          src="https://minio.lumoxuan.cn/ayumerna/picture/formula_3.png"
+          alt="Formula 3"
+          class="formula-image-3"
+        />
+      </details>
+      <p>
+        A positive tREX Score indicates that the tRNA might possess suppressor
+        properties, potentially decoding stop codons and acting as a sup-tRNA.
+      </p>
+    </div>
+
     <div class="parameters-container">
       <h3>Generation Parameters</h3>
       <p><strong>Amino Acid:</strong> {{ aminoAcid }}</p>
       <p><strong>Domain:</strong> {{ domain }}</p>
 
-      <!-- 用户选择反密码子 -->
       <label for="reverse-codon">Select Reverse Codon:</label>
       <select
         id="reverse-codon"
@@ -31,24 +126,15 @@
       </select>
     </div>
 
-    <button
-      v-if="!taskSubmitted && shouldRecalculate"
-      @click="submitTask"
-      class="submit-btn"
-    >
-      Submit Task
-    </button>
-    <p v-else-if="taskSubmitted" class="task-status">
+    <p v-if="taskSubmitted" class="task-status">
       Task has been submitted. Waiting for results...
     </p>
 
-    <!-- WebSocket 消息展示 -->
     <div v-if="wsMessages.length" class="message-container">
       <h3>Push Notification</h3>
       <p class="message-item">{{ wsMessages[0] }}</p>
     </div>
 
-    <!-- 下载按钮 -->
     <button
       v-if="resultDownloadUrl"
       @click="downloadResult"
@@ -57,7 +143,6 @@
       Download Results
     </button>
 
-    <!-- 使用 TableWithAction 组件 -->
     <TableWithAction
       :data-source="sequences"
       @download-selected="downloadSelectedResults"
@@ -66,284 +151,47 @@
 </template>
 
 <script setup lang="ts">
-import TableWithAction from './TableWithAction'
-import { ref, onMounted, computed } from 'vue'
-import axios from 'axios'
+import TableWithAction from './TableWithAction' // 根据实际路径调整
+import { ref, onMounted } from 'vue'
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
+import type { Sequence, GenerationParameters } from './logic'
+import {
+  getCodonStorageKey,
+  getCodonTimestampKey,
+  loadDefaultSequences,
+  fetchAndReplaceSequences,
+  submitTask,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  lastSubmittedCodon,
+} from './logic'
 
-// 定义数据结构类型
-interface GenerationParameters {
-  model: string
-  sequenceCount: number
-}
-
-interface Sequence {
-  sequence: string
-  trexScore: number | null
-}
-
+// 定义响应式变量
 const generationParameters = ref<GenerationParameters>({
   model: '',
   sequenceCount: 0,
 })
 const aminoAcid = ref<string>('')
 const domain = ref<string>('')
+
 const sequences = ref<Sequence[]>([])
 const wsMessages = ref<string[]>([])
 const taskSubmitted = ref<boolean>(false)
 const resultDownloadUrl = ref<string | null>(null)
 
-// 反密码子相关
-const reverseCodonOptions = ['TAA', 'TAG', 'TGA']
-const selectedReverseCodon = ref<string>(reverseCodonOptions[0]) // 默认选择第一个
-const reverseCodonStorageKeyPrefix = 'sequences_' // 为每个反密码子单独存储数据
+const reverseCodonOptions = ['CUA', 'UUA']
+const selectedReverseCodon = ref<string>(reverseCodonOptions[0])
 
-// WebSocket相关配置
 const wsUrl = '/sockjs/ws'
 const subscribeUrl = '/topic/progress/1'
 
-// 判断是否需要重新计算
-const shouldRecalculate = computed(() => {
-  if (sequences.value.length === 0) return true
-  for (const seq of sequences.value) {
-    if (seq.trexScore === null || !isScoreAcceptable(seq.trexScore)) {
-      return true
-    }
-  }
-  return false
-})
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function isScoreAcceptable(score: number): boolean {
-  // 在这里根据需要修改判断逻辑
-  return true
-}
-
-// 将序列转换为FA格式文件
-function convertSequencesToFA(): Blob {
-  const faContent = sequences.value
-    .map((seq, index) => `>seq${index + 1}\n${seq.sequence}`)
-    .join('\n')
-  return new Blob([faContent], { type: 'text/plain' })
-}
-
-// 根据反密码子获取本地存储key
-function getCodonStorageKey(codon: string) {
-  return `${reverseCodonStorageKeyPrefix}${codon}`
-}
-
-// 加载指定反密码子的本地缓存
-function loadSequencesForCodon(codon: string): boolean {
-  const codonKey = getCodonStorageKey(codon)
-  const seqData = localStorage.getItem(codonKey)
-  if (seqData) {
-    try {
-      const parsedSequences = JSON.parse(seqData) as Sequence[]
-      sequences.value = parsedSequences.map(seq => ({
-        sequence: seq.sequence,
-        trexScore: seq.trexScore ?? null,
-      }))
-      return true
-    } catch (error) {
-      console.error(`Error parsing sequences for ${codon}:`, error)
-    }
-  }
-  return false
-}
-
-// 存储指定反密码子的序列数据
-function storeSequencesForCodon(codon: string, seqs: Sequence[]) {
-  const codonKey = getCodonStorageKey(codon)
-  localStorage.setItem(codonKey, JSON.stringify(seqs))
-}
-
-// 当用户切换反密码子时调用
-function onReverseCodonChange() {
-  // 优先尝试从该反密码子的缓存中加载
-  if (!loadSequencesForCodon(selectedReverseCodon.value)) {
-    // 如果无缓存，则尝试使用默认的 'sequences' 数据作为初始数据
-    const defaultSeqData = localStorage.getItem('sequences')
-    if (defaultSeqData) {
-      try {
-        const parsedSequences = JSON.parse(defaultSeqData) as Sequence[]
-        sequences.value = parsedSequences.map(seq => ({
-          sequence: seq.sequence,
-          trexScore: seq.trexScore ?? null,
-        }))
-      } catch (error) {
-        console.error('Error parsing default sequences:', error)
-      }
-    }
-
-    // 此时如果依然没有数据，或者数据需要重新计算，则发起新请求
-    if (shouldRecalculate.value) {
-      rerunScoringForSelectedCodon()
-    } else {
-      console.log(
-        `Loaded default sequences for ${selectedReverseCodon.value}. No need to recalculate.`,
-      )
-    }
-  } else {
-    // 本地已有该反密码子的缓存数据
-    taskSubmitted.value = false
-    wsMessages.value = []
-    resultDownloadUrl.value = null
-
-    if (shouldRecalculate.value) {
-      rerunScoringForSelectedCodon()
-    } else {
-      console.log(
-        `Loaded cached sequences for ${selectedReverseCodon.value}. No need to recalculate.`,
-      )
-    }
-  }
-}
-
-// 需要针对当前反密码子重新计算时调用
-function rerunScoringForSelectedCodon() {
-  // 清空当前数据，准备重新请求打分
-  wsMessages.value = []
-  resultDownloadUrl.value = null
-  taskSubmitted.value = false
-
-  connectWebSocket()
-  submitTask()
-}
-
-// 从 localStorage 加载基本参数和默认序列
-function loadLocalStorageData() {
-  const parameters = localStorage.getItem('generationParameters')
-  if (parameters) {
-    try {
-      const parsedParams = JSON.parse(parameters) as {
-        model: string
-        sequenceCount: number
-      }
-      generationParameters.value.model = parsedParams.model
-      generationParameters.value.sequenceCount = parsedParams.sequenceCount
-
-      const [parsedAminoAcid, parsedDomain] = generationParameters.value.model
-        .replace('.pt', '')
-        .split('_')
-      aminoAcid.value = parsedAminoAcid
-      domain.value = parsedDomain
-    } catch (error) {
-      console.error('Error parsing generationParameters:', error)
-    }
-  }
-
-  // 从默认的 'sequences' 中加载数据（作为初始数据源）
-  const sequenceData = localStorage.getItem('sequences')
-  if (sequenceData) {
-    try {
-      const parsedSequences = JSON.parse(sequenceData) as Sequence[]
-      sequences.value = parsedSequences.map(seq => ({
-        sequence: seq.sequence,
-        trexScore: seq.trexScore ?? null,
-      }))
-    } catch (error) {
-      console.error('Error parsing sequences:', error)
-    }
-  }
-}
-
-// 提交任务，请确保 sequences 不为空（此时 sequences 已有默认值或缓存值）
-async function submitTask() {
-  if (!aminoAcid.value || !domain.value || !selectedReverseCodon.value) {
-    console.warn('Required parameters are missing.')
-    return
-  }
-
-  // 如果没有任何序列数据，需要用户确认数据来源（原始代码中默认从 localStorage 中获取，如果还没有则需要用户生成）
-  if (sequences.value.length === 0) {
-    console.warn(
-      'Sequences are empty. Please ensure sequences are loaded or generated first.',
-    )
-    return
-  }
-
-  const formData = new FormData()
-  formData.append('aminoAcid', aminoAcid.value)
-  formData.append('domain', domain.value)
-  formData.append('reverseCodon', selectedReverseCodon.value)
-  formData.append('testFile', convertSequencesToFA(), 'test_sequences.fa')
-
-  try {
-    const response = await axios.post('/sequence/process', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    console.log('Response from server:', response)
-    wsMessages.value = ['Task submitted successfully. Waiting for results...']
-    taskSubmitted.value = true
-  } catch (error) {
-    console.error('Error submitting task:', error)
-  }
-}
-
-// 建立 WebSocket 连接
-function connectWebSocket() {
-  const socket = new SockJS(wsUrl)
-  const client = new Client({
-    webSocketFactory: () => socket,
-    reconnectDelay: 5000,
-    onConnect: () => {
-      client.subscribe(subscribeUrl, async message => {
-        const { body } = message
-        wsMessages.value = [body]
-
-        const resultUrlMatch = body.match(
-          /results uploaded:\s*(https?:\/\/\S+)/,
-        )
-        if (resultUrlMatch) {
-          const resultUrl = resultUrlMatch[1]
-          resultDownloadUrl.value = resultUrl
-          await fetchAndReplaceSequences(resultUrl)
-        }
-      })
-    },
-    onStompError: error => {
-      console.error('WebSocket STOMP error:', error)
-    },
-  })
-  client.activate()
-}
-
-// 下载并替换序列数据
-async function fetchAndReplaceSequences(url: string) {
-  try {
-    const response = await axios.get<string>(url)
-    const text = response.data
-
-    const newSequences: Sequence[] = []
-    const lines = text.split('\n')
-    // 假设 CSV 格式：index,score,sequence (第一行为表头)
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i]
-      if (line.trim() === '') continue
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const [_indexStr, scoreStr, sequence] = line.split(',')
-      const trexScore = parseFloat(scoreStr.trim())
-      newSequences.push({
-        sequence: sequence.trim(),
-        trexScore: trexScore,
-      })
-    }
-
-    sequences.value = newSequences
-    // 缓存当前反密码子的结果
-    storeSequencesForCodon(selectedReverseCodon.value, newSequences)
-  } catch (error) {
-    console.error('Error fetching or replacing sequences:', error)
-  }
-}
-
-// 下载选中结果
+// 下载选中的结果
 function downloadSelectedResults(selectedRows: Sequence[]) {
   if (!selectedRows.length) {
     alert('No rows selected to download.')
     return
   }
+  console.log('Downloading selected rows:', selectedRows)
   const content = selectedRows
     .map(
       row =>
@@ -364,6 +212,7 @@ function downloadSelectedResults(selectedRows: Sequence[]) {
 // 下载全部结果
 function downloadResult() {
   if (!resultDownloadUrl.value) return
+  console.log('Downloading result from:', resultDownloadUrl.value)
   const link = document.createElement('a')
   link.href = resultDownloadUrl.value
   link.download = 'tREX_results.csv'
@@ -372,21 +221,231 @@ function downloadResult() {
   document.body.removeChild(link)
 }
 
-// 初始化逻辑
-onMounted(() => {
-  // 先加载基本参数和默认序列数据
-  loadLocalStorageData()
+let clientInstance: Client | null = null
 
-  // 如果当前数据需要重新计算，则建立连接并提交任务
-  if (shouldRecalculate.value) {
-    connectWebSocket()
-    if (!taskSubmitted.value) {
-      submitTask()
+// 连接 WebSocket
+function connectWebSocket() {
+  console.log('Connecting WebSocket...')
+  const socket = new SockJS(wsUrl)
+  clientInstance = new Client({
+    webSocketFactory: () => socket,
+    reconnectDelay: 5000,
+    onConnect: () => {
+      console.log('WebSocket connected.')
+      if (clientInstance) {
+        clientInstance.subscribe(subscribeUrl, async message => {
+          const { body } = message
+          console.log('Received WS message:', body)
+          wsMessages.value = [body]
+
+          const resultUrlMatch = body.match(
+            /results uploaded:\s*(https?:\/\/\S+)/,
+          )
+          if (resultUrlMatch) {
+            const resultUrl = resultUrlMatch[1]
+            const proxiedUrl = resultUrl.replace(
+              'https://minio.lumoxuan.cn/ayumerna',
+              '/ayumerna',
+            )
+            console.log('Fetching new sequences from:', proxiedUrl)
+            await fetchAndReplaceSequences(proxiedUrl, sequences)
+            taskSubmitted.value = false
+          }
+        })
+      }
+    },
+    onStompError: error => {
+      console.error('WebSocket STOMP error:', error)
+    },
+  })
+  clientInstance.activate()
+}
+
+// 反向密码子切换时的逻辑
+function onReverseCodonChange() {
+  console.log(`Changing reverse codon to ${selectedReverseCodon.value}`)
+
+  const currentTimestampSequences = localStorage.getItem('timestamp_sequences')
+  const codonTimestamp = localStorage.getItem(
+    getCodonTimestampKey(selectedReverseCodon.value),
+  )
+  const codonSeqData = localStorage.getItem(
+    getCodonStorageKey(selectedReverseCodon.value),
+  )
+
+  if (codonSeqData) {
+    // 有codon打分序列
+    try {
+      const parsed = JSON.parse(codonSeqData) as Sequence[]
+      sequences.value = parsed.map(s => ({
+        sequence: s.sequence,
+        trexScore: s.trexScore ?? null,
+      }))
+      console.log(
+        `Loaded scored codon sequences for ${selectedReverseCodon.value}, length=${parsed.length}`,
+      )
+
+      if (!codonTimestamp) {
+        console.log('No codon timestamp, submitTask using default sequences.')
+        if (loadDefaultSequences(sequences)) {
+          submitTask(
+            aminoAcid.value,
+            domain.value,
+            selectedReverseCodon.value,
+            sequences,
+            wsMessages,
+            taskSubmitted,
+            connectWebSocket,
+          )
+        } else {
+          console.log('No default sequences, do nothing.')
+        }
+      } else if (
+        currentTimestampSequences &&
+        currentTimestampSequences !== codonTimestamp
+      ) {
+        console.log(
+          'timestamp_sequences differs from codon timestamp, submitTask using default sequences.',
+        )
+        if (loadDefaultSequences(sequences)) {
+          submitTask(
+            aminoAcid.value,
+            domain.value,
+            selectedReverseCodon.value,
+            sequences,
+            wsMessages,
+            taskSubmitted,
+            connectWebSocket,
+          )
+        } else {
+          console.log('No default sequences, do nothing.')
+        }
+      } else {
+        console.log('Codon sequences and timestamp match, no submit.')
+      }
+    } catch (error) {
+      console.error(
+        `Error parsing codon ${selectedReverseCodon.value} sequences:`,
+        error,
+      )
     }
   } else {
-    console.log(
-      'Sequences are up-to-date with acceptable trexScores. No need to recalculate.',
+    // 无codon打分序列
+    const hasDefault = loadDefaultSequences(sequences)
+    if (hasDefault) {
+      console.log(
+        'No codon scored sequences, but have default sequences, submitTask.',
+      )
+      submitTask(
+        aminoAcid.value,
+        domain.value,
+        selectedReverseCodon.value,
+        sequences,
+        wsMessages,
+        taskSubmitted,
+        connectWebSocket,
+      )
+    } else {
+      console.log('No sequences at all, do nothing.')
+    }
+  }
+
+  wsMessages.value = []
+  localStorage.setItem('selectedReverseCodon', selectedReverseCodon.value)
+}
+
+onMounted(() => {
+  console.log('onMounted: Loading local storage data...')
+
+  const parametersStr = localStorage.getItem('generationParameters')
+  if (parametersStr) {
+    try {
+      const parsedParams = JSON.parse(parametersStr) as {
+        model: string
+        sequenceCount: number
+      }
+      generationParameters.value.model = parsedParams.model
+      generationParameters.value.sequenceCount = parsedParams.sequenceCount
+
+      const [parsedAminoAcid, parsedDomain] = generationParameters.value.model
+        .replace('.pt', '')
+        .split('_')
+      aminoAcid.value = parsedAminoAcid
+      domain.value = parsedDomain
+    } catch (error) {
+      console.error('Error parsing generationParameters:', error)
+    }
+  }
+
+  const savedCodon = localStorage.getItem('selectedReverseCodon')
+  if (savedCodon && reverseCodonOptions.includes(savedCodon)) {
+    selectedReverseCodon.value = savedCodon
+  } else {
+    selectedReverseCodon.value = reverseCodonOptions[0]
+  }
+
+  const hasDefault = loadDefaultSequences(sequences)
+  if (!hasDefault) {
+    console.log('No sequences found, do nothing.')
+    return
+  }
+
+  const currentTimestampSequences = localStorage.getItem('timestamp_sequences')
+  const codonTimestamp = localStorage.getItem(
+    getCodonTimestampKey(selectedReverseCodon.value),
+  )
+
+  if (!codonTimestamp) {
+    console.log('No codon timestamp, submitTask using default sequences.')
+    submitTask(
+      aminoAcid.value,
+      domain.value,
+      selectedReverseCodon.value,
+      sequences,
+      wsMessages,
+      taskSubmitted,
+      connectWebSocket,
     )
+  } else if (
+    currentTimestampSequences &&
+    currentTimestampSequences !== codonTimestamp
+  ) {
+    console.log(
+      'timestamp_sequences differs from codon timestamp, submitTask using default sequences.',
+    )
+    submitTask(
+      aminoAcid.value,
+      domain.value,
+      selectedReverseCodon.value,
+      sequences,
+      wsMessages,
+      taskSubmitted,
+      connectWebSocket,
+    )
+  } else {
+    console.log('Everything matches, try loading codon scored sequences.')
+    const codonSeqData = localStorage.getItem(
+      getCodonStorageKey(selectedReverseCodon.value),
+    )
+    if (codonSeqData) {
+      try {
+        const parsed = JSON.parse(codonSeqData) as Sequence[]
+        sequences.value = parsed.map(s => ({
+          sequence: s.sequence,
+          trexScore: s.trexScore ?? null,
+        }))
+        console.log(
+          `Loaded scored codon sequences for ${selectedReverseCodon.value}, length=${parsed.length}`,
+        )
+      } catch (error) {
+        console.error(
+          `Error parsing codon ${selectedReverseCodon.value} sequences:`,
+          error,
+        )
+      }
+    } else {
+      console.log('No codon scored sequences found, using default as is.')
+    }
   }
 })
 </script>
@@ -394,16 +453,61 @@ onMounted(() => {
 <style scoped>
 .site--main {
   padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+
+  margin: 0 auto;
 }
 
-.parameters-container,
-.sequences-container {
+.title {
+  font-size: 2.5em;
+  margin-bottom: 10px;
+  text-align: center;
+  color: #333;
+}
+
+.description {
+  font-size: 1.2em;
+  text-align: center;
+  margin-bottom: 30px;
+  color: #555;
+}
+
+.info-box {
+  background: #f7f7f7;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
   margin-bottom: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.parameters-container p,
-.sequences-container ul {
-  margin: 10px 0;
+.parameters-container {
+  background: #f7f7f7;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.parameters-container h3 {
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.parameters-container p {
+  margin: 8px 0;
+  color: #555;
+}
+
+.select-box {
+  padding: 8px;
+  margin-top: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  width: 100%;
+  max-width: 200px;
 }
 
 .submit-btn,
@@ -411,11 +515,14 @@ onMounted(() => {
   background-color: #007bff;
   color: white;
   border: none;
-  padding: 10px 20px;
+  padding: 12px 24px;
   cursor: pointer;
   border-radius: 5px;
   font-weight: bold;
+  transition: background-color 0.3s ease;
   margin: 10px 0;
+  display: block;
+  width: fit-content;
 }
 
 .submit-btn:hover,
@@ -426,6 +533,7 @@ onMounted(() => {
 .task-status {
   color: green;
   font-weight: bold;
+  margin-top: 10px;
 }
 
 .message-container {
@@ -433,14 +541,62 @@ onMounted(() => {
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   padding: 16px;
+  margin-top: 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.message-container h3 {
+  margin-top: 0;
+  color: #333;
 }
 
 .message-item {
   margin: 5px 0;
+  color: #555;
 }
 
-.select-box {
+.details-box {
   margin-top: 10px;
-  padding: 5px;
+  cursor: pointer;
+}
+
+.details-summary {
+  font-weight: bold;
+  color: #007bff;
+  outline: none;
+  font-size: 1em;
+}
+
+.details-summary:hover {
+  text-decoration: underline;
+}
+
+.details-content {
+  margin-top: 10px;
+  color: #555;
+}
+
+.formula-image-1 {
+  display: block;
+  margin: 10px auto;
+  height: auto;
+  max-width: 70%; /* 根据图片原比例缩放 */
+  width: auto;
+}
+
+.formula-image-2 {
+  display: block;
+  margin: 10px auto;
+  height: auto;
+  max-width: 25%; /* 根据图片原比例缩放 */
+  width: auto;
+}
+
+.formula-image-3 {
+  display: block;
+  margin: 10px auto;
+  height: auto;
+  max-width: 30%; /* 根据图片原比例缩放 */
+  width: auto;
 }
 </style>

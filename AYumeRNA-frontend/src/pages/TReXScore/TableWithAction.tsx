@@ -3,7 +3,7 @@ import { STable, STableProvider } from '@shene/table'
 import ActionLink from './ActionLink'
 import en from '@shene/table/dist/locale/en'
 import type { SortOrder } from '@shene/table/dist/src/types/table'
-import styles from './TableWithAction.module.css' // 导入样式文件
+import styles from './TableWithAction.module.css'
 
 interface TableRow {
   sequence: string
@@ -82,7 +82,7 @@ const TableWithAction = defineComponent({
     return () => (
       <div>
         <button
-          class={styles.downloadBtn} // 应用模块化样式
+          class={styles.downloadBtn}
           onClick={() => emit('download-selected', selectedRows.value)}
         >
           Download Selected Rows
@@ -90,7 +90,7 @@ const TableWithAction = defineComponent({
 
         <STableProvider locale={en}>
           <STable
-            v-model:selectedRowKeys={selectedRowKeys.value} // 绑定选中行
+            v-model:selectedRowKeys={selectedRowKeys.value}
             columns={displayedColumns}
             dataSource={props.dataSource}
             customRow={customRow}
@@ -103,7 +103,7 @@ const TableWithAction = defineComponent({
             hover
             pagination={{ pageSize: 5 }}
             rowSelection={{
-              type: 'checkbox', // 支持多选
+              type: 'checkbox',
               onChange: (keys: (string | number)[], rows: TableRow[]) => {
                 selectedRowKeys.value = keys
                 selectedRows.value = rows

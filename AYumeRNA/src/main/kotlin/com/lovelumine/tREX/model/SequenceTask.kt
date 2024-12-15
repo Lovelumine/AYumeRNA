@@ -8,4 +8,4 @@ data class SequenceTask(
     val templateFileData: ByteArray,
     val testFileData: ByteArray,
     var retryCount: Int = 0 // 新增字段，记录重试次数
-)
+) : Serializable
