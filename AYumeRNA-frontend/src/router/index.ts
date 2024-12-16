@@ -32,12 +32,12 @@ const routes = [
     ],
   },
   {
-    path: '/sequence-verification', // 新增的序列验证页面路由
+    path: '/sequence-verification', // 序列验证页面路由
     name: 'SequenceVerification',
     component: SequenceVerification,
     meta: {
       description:
-        'Compare generated tRNA sequences with natural tRNA sequences for verification using tRNAscan-SE tool.', // 为页面添加描述
+        'Compare generated tRNA sequences with natural tRNA sequences for verification using tRNAscan-SE tool.',
     },
   },
   { path: '/help', name: 'Help', component: Home },
