@@ -1,6 +1,6 @@
 <template>
-  <div class="trna-evaluator">
-    <h2>tRNA Evaluator</h2>
+  <div >
+    <h2 class="trna-evaluator">tRNA Evaluator</h2>
     <div class="buttons">
       <router-link to="/trna-evaluator/aminoacylation">
         <button class="btn">Aminoacylation Evaluation</button>
@@ -28,6 +28,7 @@
 }
 
 .buttons {
+  text-align: center;
   margin: 20px 0;
 }
 

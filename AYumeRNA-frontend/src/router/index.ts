@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../pages/HomePage/HomePage.vue'
 import CodonGenerator from '../pages/CondonGenerator/CondonGenerator.vue'
-import TReXScore from '../pages/TReXScore/TReXScore.vue'
+// import TReXScore from '../pages/TReXScore/TReXScore.vue'
 import VisualizationAnalysis from '../pages/ResultAnalysis/VisualizationAnalysis.vue'
 import SecondaryStructure from '../pages/ResultAnalysis/SecondaryStructure/SecondaryStructure.vue'
 import TertiaryStructure from '../pages/ResultAnalysis/TertiaryStructure/TertiaryStructure.vue'
@@ -9,7 +9,7 @@ import SequenceVerification from '../pages/SequenceVerification/SequenceVerifica
 import TRNAEvaluator from '../pages/TRNAEvaluator/TRNAEvaluator.vue'
 import AminoacylationEvaluation from '../pages/TRNAEvaluator/AminoacylationEvaluation.vue'
 import StructureFoldingEvaluation from '../pages/TRNAEvaluator/StructureFoldingEvaluation.vue'
-import IdentityElementsEvaluation from '../pages/TRNAEvaluator/IdentityElementsEvaluation.vue'
+import IdentityElementsEvaluation from '../pages/TRNAEvaluator/IdentityElementsEvaluation/IdentityElementsEvaluation.vue'
 
 const routes = [
   { path: '/', name: 'Sequence Generator', component: CodonGenerator },
@@ -35,11 +35,11 @@ const routes = [
       },
     ],
   },
-  {
-    path: '/trex-score',
-    name: 'tRNACompatibility Evaluator',
-    component: TReXScore,
-  },
+  // {
+  //   path: '/trex-score',
+  //   name: 'tRNACompatibility Evaluator',
+  //   component: TReXScore,
+  // },
   {
     path: '/visualization',
     name: 'VisualizationAnalysis',
