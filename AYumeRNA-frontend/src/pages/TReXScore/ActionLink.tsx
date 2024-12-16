@@ -22,8 +22,8 @@ const ActionLink = defineComponent({
       )
       console.log('Sequence saved for analysis:', props.sequence)
 
-      router.push('/visualization/secondary-structure').then(() => {
-        console.log('Navigated to /visualization/secondary-structure')
+      router.push('/visualization').then(() => {
+        console.log('Navigated to /visualization')
       })
     }
 
