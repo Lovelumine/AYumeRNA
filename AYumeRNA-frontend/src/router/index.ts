@@ -1,14 +1,40 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../pages/HomePage/HomePage.vue'
 import CodonGenerator from '../pages/CondonGenerator/CondonGenerator.vue'
-import TReXScore from '../pages/TReXScore/TReXScore.vue' // tREX评分组件
-import VisualizationAnalysis from '../pages/ResultAnalysis/VisualizationAnalysis.vue' // 可视化分析组件
-import SecondaryStructure from '../pages/ResultAnalysis/SecondaryStructure/SecondaryStructure.vue' // 二级结构预测组件
-import TertiaryStructure from '../pages/ResultAnalysis/TertiaryStructure/TertiaryStructure.vue' // 三级结构预测组件
-import SequenceVerification from '../pages/SequenceVerification/SequenceVerification.vue' // 序列验证组件
+import TReXScore from '../pages/TReXScore/TReXScore.vue'
+import VisualizationAnalysis from '../pages/ResultAnalysis/VisualizationAnalysis.vue'
+import SecondaryStructure from '../pages/ResultAnalysis/SecondaryStructure/SecondaryStructure.vue'
+import TertiaryStructure from '../pages/ResultAnalysis/TertiaryStructure/TertiaryStructure.vue'
+import SequenceVerification from '../pages/SequenceVerification/SequenceVerification.vue'
+import TRNAEvaluator from '../pages/TRNAEvaluator/TRNAEvaluator.vue'
+import AminoacylationEvaluation from '../pages/TRNAEvaluator/AminoacylationEvaluation.vue'
+import StructureFoldingEvaluation from '../pages/TRNAEvaluator/StructureFoldingEvaluation.vue'
+import IdentityElementsEvaluation from '../pages/TRNAEvaluator/IdentityElementsEvaluation.vue'
 
 const routes = [
   { path: '/', name: 'Sequence Generator', component: CodonGenerator },
+  {
+    path: '/trna-evaluator',
+    name: 'TRNAEvaluator',
+    component: TRNAEvaluator,
+    children: [
+      {
+        path: 'aminoacylation',
+        name: 'Aminoacylation Evaluation',
+        component: AminoacylationEvaluation,
+      },
+      {
+        path: 'structure-folding',
+        name: 'StructureFolding Evaluation',
+        component: StructureFoldingEvaluation,
+      },
+      {
+        path: 'identity-elements',
+        name: 'IdentityElements Evaluation',
+        component: IdentityElementsEvaluation,
+      },
+    ],
+  },
   {
     path: '/trex-score',
     name: 'tRNACompatibility Evaluator',
@@ -32,7 +58,7 @@ const routes = [
     ],
   },
   {
-    path: '/sequence-verification', // 序列验证页面路由
+    path: '/sequence-verification',
     name: 'SequenceVerification',
     component: SequenceVerification,
     meta: {
@@ -40,6 +66,7 @@ const routes = [
         'Compare generated tRNA sequences with natural tRNA sequences for verification using tRNAscan-SE tool.',
     },
   },
+
   { path: '/help', name: 'Help', component: Home },
 ]
 

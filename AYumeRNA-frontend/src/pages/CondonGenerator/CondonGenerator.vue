@@ -38,7 +38,7 @@ import SequenceResult from './SequenceResult.vue'
 const sequenceCount = ref(100)
 const sequenceOptions = [10, 50, 100, 500, 1000] // 可选择的序列数量
 const sequences = ref<string[]>([]) // 保存生成的序列
-const defaultReverseCodon = 'TAA' // 默认反密码子
+const defaultReverseCodon = ref('') // 默认反密码子
 const selectedModel = ref('') // 选中的模型名称
 
 /**
@@ -72,7 +72,7 @@ async function generateSequence() {
     // 发送请求参数
     const params = new URLSearchParams()
     params.append('model', selectedModel.value)
-    params.append('reverseCodon', defaultReverseCodon)
+    params.append('reverseCodon', defaultReverseCodon.value.toString())
     params.append('sequenceCount', sequenceCount.value.toString())
 
     // 发送 POST 请求
