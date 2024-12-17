@@ -7,8 +7,8 @@ import SecondaryStructure from '../pages/ResultAnalysis/SecondaryStructure/Secon
 import TertiaryStructure from '../pages/ResultAnalysis/TertiaryStructure/TertiaryStructure.vue'
 import SequenceVerification from '../pages/SequenceVerification/SequenceVerification.vue'
 import TRNAEvaluator from '../pages/TRNAEvaluator/TRNAEvaluator.vue'
-import AminoacylationEvaluation from '../pages/TRNAEvaluator/AminoacylationEvaluation.vue'
-import StructureFoldingEvaluation from '../pages/TRNAEvaluator/StructureFoldingEvaluation.vue'
+import AminoacylationEvaluation from '../pages/TRNAEvaluator/AminoacylationEvaluation/AminoacylationEvaluation.vue'
+import StructureFoldingEvaluation from '../pages/TRNAEvaluator/StructureFoldingEvaluation/StructureFoldingEvaluation.vue'
 import IdentityElementsEvaluation from '../pages/TRNAEvaluator/IdentityElementsEvaluation/IdentityElementsEvaluation.vue'
 
 const routes = [

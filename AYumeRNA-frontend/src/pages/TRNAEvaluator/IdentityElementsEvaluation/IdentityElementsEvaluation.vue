@@ -1,40 +1,22 @@
 <!-- src/pages/TReXScore/TRNACompatibilityEvaluator.vue -->
 <template>
   <div class="site--main">
-    <h2 class="title">tRNACompatibility Evaluator</h2>
-    <p class="description">
-      Welcome to the <strong>tRNACompatibility Evaluator</strong>. In the first step, we used AI to generate novel sup-tRNA sequences. Now, we will evaluate these sequences to determine whether they can carry specific amino acids and read through stop codons.
-    </p>
-
     <div class="info-box">
-  <h3>Overview</h3>
+  <h3>Evaluating tRNA Identity Elements with tREX Score</h3>
   <p>
-    In the first step, sup-tRNA sequences with special suppressor capabilities were generated using AI. Now, in this second phase, we apply the tREX Score algorithm to evaluate these tRNAs and determine if they can carry specific amino acids and read through stop codons.
+    Identity elements are critical sequence and structural features in tRNAs that determine their recognition by aminoacyl-tRNA synthetases (aaRSs) and their ability to carry specific amino acids. Proper identification of these elements is essential to evaluate whether a generated sup-tRNA sequence can function correctly in translation, including the suppression of stop codons.
+  </p>
+
+  <p>
+    To assess the identity elements of generated sup-tRNA sequences, we use the <strong>tREX Score</strong> algorithm. This scoring method compares candidate tRNAs against consensus templates derived from validated reference tRNA datasets to identify conserved positions critical for amino acid binding and identity recognition.
   </p>
 
   <details class="details-box">
     <summary class="details-summary">
-      Show More About the First Step
+      Show More About the Evaluation Process
     </summary>
-    <div class="details-content">
-      <h4>Step 1: Generating sup-tRNA Sequences</h4>
-      <p>
-        In the first step, computational models and reference datasets were used to generate new sup-tRNA sequences with potential stop codon suppression capabilities. At this stage, the specific amino acids they carry were not yet determined. These sequences serve as candidates for further evaluation in this phase.
-      </p>
-    </div>
-  </details>
-</div>
 
-<div class="info-box">
-  <h3>Step 2: Evaluating tRNAs with tREX Score</h3>
-  <p>
-    To determine whether the generated sup-tRNA sequences can carry specific amino acids and suppress stop codons, we use the tREX Score algorithm. This process aligns candidate tRNAs against consensus templates derived from reference tRNA datasets.
-  </p>
-  <details class="details-box">
-    <summary class="details-summary">
-      Show More About the Second Step
-    </summary>
-    <p>The reference datasets for scoring are:</p>
+    <p>The reference datasets for scoring identity elements are as follows:</p>
     <ul>
       <li>
         Ala (Alanine):
@@ -109,13 +91,15 @@
         >
       </li>
     </ul>
+
     <p>
-      These files contain template tRNA sequences used to generate a consensus template and identify conserved positions.
+      These files contain consensus tRNA sequences used to align and identify conserved nucleotide positions contributing to tRNA identity.
     </p>
 
     <p>
-      After performing a multiple sequence alignment (MSA) on the templates, we define:
+      After performing a multiple sequence alignment (MSA) on the templates, the following scoring formulas are applied:
     </p>
+
     <img
       src="https://minio.lumoxuan.cn/ayumerna/picture/formula_1.png"
       alt="Formula 1"
@@ -123,7 +107,7 @@
     />
 
     <p>
-      For each test sequence, after aligning it to the consensus sequence, each conserved position <math>i ∈ C</math> is scored as follows:
+      For each test tRNA sequence, conserved positions <math>i ∈ C</math> are scored as follows:
     </p>
     <img
       src="https://minio.lumoxuan.cn/ayumerna/picture/formula_2.png"
@@ -131,15 +115,18 @@
       class="formula-image-2"
     />
 
-    <p>Finally, the tREX Score is computed as:</p>
+    <p>
+      Finally, the cumulative tREX Score is computed as:
+    </p>
     <img
       src="https://minio.lumoxuan.cn/ayumerna/picture/formula_3.png"
       alt="Formula 3"
       class="formula-image-3"
     />
   </details>
+
   <p>
-    A positive tREX Score indicates that the tRNA may carry a specific amino acid and possess suppressor properties, making it a true sup-tRNA capable of decoding stop codons.
+    A <strong>positive tREX Score</strong> indicates that the generated tRNA likely possesses the correct identity elements to carry a specific amino acid and function as a suppressor tRNA (sup-tRNA). These tRNAs are capable of decoding stop codons and participating in protein synthesis with the desired amino acid specificity.
   </p>
 </div>
 
