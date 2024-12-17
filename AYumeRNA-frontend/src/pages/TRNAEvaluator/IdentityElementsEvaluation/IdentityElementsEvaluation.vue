@@ -153,7 +153,7 @@
     </div>
 
     <p v-if="taskSubmitted" class="task-status">
-      Task has been submitted. Waiting for results...
+      <!-- Task has been submitted. Waiting for results... -->
     </p>
 
     <div v-if="wsMessages.length" class="message-container">
@@ -172,6 +172,7 @@
     <TableWithAction
       :data-source="sequences"
       @download-selected="downloadSelectedResults"
+
     />
   </div>
 </template>
@@ -191,7 +192,6 @@ import {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   lastSubmittedCodon,
 } from './logic'
-
 // 定义响应式变量
 const generationParameters = ref<GenerationParameters>({
   model: '',
@@ -474,6 +474,8 @@ onMounted(() => {
     }
   }
 })
+
+
 </script>
 
 <style scoped>
