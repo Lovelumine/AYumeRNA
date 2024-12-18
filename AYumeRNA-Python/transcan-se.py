@@ -1,58 +1,85 @@
-import requests
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service as ChromeService
+import subprocess
+import os
 import time
 
-# 设置 Selenium，无头浏览器模式
-options = Options()
-options.add_argument("--headless")  # 无头模式
-options.add_argument("--disable-gpu")
-options.add_argument("--no-sandbox")
+def run_trnascan_se(sequence, output_dir):
+    # 生成时间戳以创建唯一的文件名
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    temp_dir = "temp_files"
+    os.makedirs(temp_dir, exist_ok=True)
+    
+    # 临时文件路径
+    temp_fasta_file = os.path.join(temp_dir, f"temp_{timestamp}.fasta")
+    temp_output_file = os.path.join(temp_dir, f"trnascan_output_{timestamp}.txt")
+    
+    # 将序列写入临时文件
+    with open(temp_fasta_file, 'w') as f_out:
+        f_out.write(f">sequence_{timestamp}\n{sequence}\n")
+    
+    # 运行tRNAscan-SE命令
+    command = [
+        "tRNAscan-SE",  # tRNAscan-SE 的安装路径
+        "A",
+        "-o", temp_output_file,  # 输出文件路径
+        temp_fasta_file  # 输入的FASTA文件路径
+    ]
+    
+    # 执行命令
+    try:
+        subprocess.run(command, check=True)
+        print(f"tRNAscan-SE finished. Results saved in {temp_output_file}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error occurred: {e}")
+    
+    # 删除临时文件
+    os.remove(temp_fasta_file)
+    
+    return temp_output_file
 
-# 替换为您实际的 ChromeDriver 可执行文件路径
-service = ChromeService(executable_path='/usr/local/bin/chromedriver')  # 请确保路径正确
-driver = webdriver.Chrome(service=service, options=options)
+def parse_trnascan_output(output_file):
+    # 解析tRNAscan-SE的输出文件
+    tRNA_data = []
+    
+    try:
+        with open(output_file, 'r') as file:
+            lines = file.readlines()
+            for line in lines:
+                if line.startswith("#") or line.startswith("--------"):  # 跳过注释行和分隔符行
+                    continue
+                columns = line.strip().split("\t")
+                if len(columns) >= 9:  # 确保有足够的列
+                    tRNA = {
+                        'tRNA Begin': columns[2],   # Start position (Begin)
+                        'tRNA End': columns[3],     # End position (End)
+                        'tRNA Type': columns[4],    # tRNA Type
+                        'Anticodon': columns[5],    # Codon
+                        'Infernal Score': columns[8]  # Score
+                    }
+                    tRNA_data.append(tRNA)
+        return tRNA_data
+    except Exception as e:
+        print(f"Error parsing output file: {e}")
+        return []
 
-# 访问网站以获取 cookies
-driver.get("https://lowelab.ucsc.edu/cgi-bin/tRNAscan-SE2.cgi")
-
-# 等待页面完全加载
-time.sleep(2)
-
-# 从浏览器获取 cookies
-cookies = driver.get_cookies()
-driver.quit()
-
-# 将 cookies 转换为适用于 requests 库的格式
-session = requests.Session()
-for cookie in cookies:
-    session.cookies.set(cookie['name'], cookie['value'])
-
-# 准备表单数据
-payload = {
-    'expect': '0.0000001',
-    'qformat': 'raw',
-    'database': 'all-trnas',
-    'seqname': 'Your-seq-trna1',
-    'gcode': 'Universal',
-    'qseq': 'GGCCCAATAGCTAAGTAGGTATAGCAGGGGACTGAAAATCCCCGTGtCGGCAGTTCGATTCTGCCTTGGGCCA',
-    'options': '',  # 如果有具体选项，请填写
-}
-
-# 准备文件参数，包含空的 'seqfile'，以及 'qseq' 序列
-files = {
-    'qseq': ('GGCCCAATAGCTAAGTAGGTATAGCAGGGGACTGAAAATCCCCGTGtCGGCAGTTCGATTCTGCCTTGGGCCA'),
-    'seqfile': ('', '', 'application/octet-stream')
-}
-
-# 使用携带 cookies 的会话发送 POST 请求，禁用 SSL 验证
-response = session.post(
-    'https://lowelab.ucsc.edu/cgi-bin/tRNAscan-SE2.cgi',
-    data=payload,
-    files=files,
-    verify=False  # 禁用 SSL 证书验证
-)
-
-# 打印响应的 HTML 内容
-print(response.text)
+if __name__ == "__main__":
+    # 通过函数获取序列
+    sequence = "UGUAGGAUGGCGGAGUGGUUAACGCAUGCGCCUUUAAAGCGCAAGGUCCUGGGUUCGAAUCCCGGUCCUAUAA"  # 示例序列
+    
+    # 输出文件夹路径（确保这个目录存在）
+    output_dir = "temp_files"
+    
+    # 运行tRNAscan-SE并获取输出文件
+    output_file = run_trnascan_se(sequence, output_dir)
+    
+    # 解析输出文件
+    tRNA_data = parse_trnascan_output(output_file)
+    
+    # 打印解析结果
+    if tRNA_data:
+        for tRNA in tRNA_data:
+            print(tRNA)
+    else:
+        print("No tRNA data found.")
+    
+    # 删除所有临时文件
+    os.remove(output_file)
