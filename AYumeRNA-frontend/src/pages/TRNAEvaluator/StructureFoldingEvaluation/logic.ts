@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import axios from 'axios'
 import type { SequenceInfo } from './tableConfig.ts'
+import router from '@/router/index.js'
 
 // 类型定义
 interface Sequence {
@@ -67,6 +68,14 @@ const fetchAllSequenceInfo = async () => {
     await delay(500)  // 每次请求后等待 0.5 秒
   }
   loading.value = false
+}
+
+// 存储序列并跳转到 /visualization
+export function handleAnalyzeSequence(record: SequenceInfo) {
+  localStorage.setItem('analyzedSequence', JSON.stringify(record))
+  router.push('/visualization').then(() => {
+    console.log('Navigated to /visualization')
+  })
 }
 
 export {

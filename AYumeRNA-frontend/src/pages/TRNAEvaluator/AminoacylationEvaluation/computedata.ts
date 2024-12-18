@@ -1,3 +1,6 @@
+import router from "@/router";
+import type { SequenceData } from "./tableConfig";
+
 // 氨基酸与 ΔΔG° 数据
 export const aminoAcids = [
   { name: 'Glu', deltaG: 2.8 },
@@ -28,4 +31,12 @@ export function calculateFreeEnergy(tstemSequence: string): { basePairs: string[
   }
 
   return { basePairs: pairs, energy: energy }
+}
+
+// 存储序列并跳转到 /visualization
+export function handleAnalyzeSequence(record: SequenceData) {
+  localStorage.setItem('analyzedSequence', JSON.stringify(record))
+  router.push('/visualization').then(() => {
+    console.log('Navigated to /visualization')
+  })
 }

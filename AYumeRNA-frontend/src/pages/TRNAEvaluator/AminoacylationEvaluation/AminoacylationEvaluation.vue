@@ -54,18 +54,17 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import en from '@shene/table/dist/locale/en'
 import { columns, pagination, onPaginationChange, type SequenceData } from './tableConfig'
 import axios from 'axios'
-import { aminoAcids, calculateFreeEnergy } from './computedata'
+import { aminoAcids, calculateFreeEnergy ,handleAnalyzeSequence} from './computedata'
 
 // 响应式变量
 const dataSource = ref<SequenceData[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
 const selectedAminoAcid = ref<number>(aminoAcids[0].deltaG) // 默认选中第一个
-const router = useRouter()
+
 
 // 加载序列数据并缓存结果
 async function loadSequences() {
@@ -131,13 +130,7 @@ async function loadSequences() {
   }
 }
 
-// 存储序列并跳转到 /visualization
-function handleAnalyzeSequence(record: SequenceData) {
-  localStorage.setItem('analyzedSequence', JSON.stringify(record))
-  router.push('/visualization').then(() => {
-    console.log('Navigated to /visualization')
-  })
-}
+
 
 // 计算 Total Free Energy
 function calculateTotalEnergy(freeEnergy?: string): string {

@@ -33,6 +33,11 @@
           <template v-else-if="column.key === 'tRNAType'">
             {{ record.tRNAType }}
           </template>
+          <template v-else-if="column.key === 'actions'">
+            <button class="action-btn" @click="handleAnalyzeSequence(record)">
+              Visualization
+            </button>
+          </template>
         </template>
       </s-table>
     </s-table-provider>
@@ -46,6 +51,7 @@
 <script setup lang="ts">
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ref, onMounted } from 'vue'
+import en from '@shene/table/dist/locale/en'
 import { columns } from './tableConfig'
 import {
   sequences,
@@ -54,7 +60,8 @@ import {
   loading,
   error,
   loadSequences,
-  fetchAllSequenceInfo
+  fetchAllSequenceInfo,
+  handleAnalyzeSequence
 } from './logic'
 
 // 在 mounted 时加载序列并开始请求
@@ -82,5 +89,17 @@ onMounted(() => {
 
 .loading {
   color: #409eff;
+}
+.action-btn {
+  padding: 4px 8px;
+  color: #fff;
+  background-color: #409eff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.action-btn:hover {
+  background-color: #66b1ff;
 }
 </style>
