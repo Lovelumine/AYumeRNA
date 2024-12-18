@@ -1,3 +1,4 @@
+<!-- src/pages/TRNAEvaluator/StructureFoldingEvaluation/StructureFoldingEvaluation.vue -->
 <template>
   <div class="structure-folding-evaluation">
     <h3 class="title">Structure Folding Evaluation</h3>
@@ -43,33 +44,27 @@
     </s-table-provider>
 
     <!-- 加载和错误提示 -->
-
+    <div v-if="loading" class="loading">Loading...</div>
     <div v-if="error" class="error">{{ error }}</div>
   </div>
 </template>
 
 <script setup lang="ts">
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { ref, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import en from '@shene/table/dist/locale/en'
 import { columns } from './tableConfig'
 import {
-  sequences,
   dataSource,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   loading,
   error,
   loadSequences,
-  fetchAllSequenceInfo,
   handleAnalyzeSequence
 } from './logic'
 
 // 在 mounted 时加载序列并开始请求
 onMounted(() => {
   loadSequences()
-  if (sequences.value.length > 0) {
-    fetchAllSequenceInfo() // 开始请求
-  }
 })
 </script>
 
@@ -90,6 +85,7 @@ onMounted(() => {
 .loading {
   color: #409eff;
 }
+
 .action-btn {
   padding: 4px 8px;
   color: #fff;
