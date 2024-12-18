@@ -56,6 +56,10 @@ export default defineConfig({
         target: 'http://127.0.0.1:2002',
         changeOrigin: true,
       },
+      '/run':{
+        target: 'http://127.0.0.1:2002',
+        changeOrigin: true,
+      },
       // 新增反向代理规则，将 /ayumerna 转发到 https://minio.lumoxuan.cn
       '/ayumerna': {
         target: 'https://minio.lumoxuan.cn',
