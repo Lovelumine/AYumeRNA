@@ -16,10 +16,9 @@ def run_trnascan_se(sequence, output_dir):
     with open(temp_fasta_file, 'w') as f_out:
         f_out.write(f">sequence_{timestamp}\n{sequence}\n")
     
-    # 运行tRNAscan-SE命令
+    # 运行tRNAscan-SE命令（去掉不必要的 "A" 参数）
     command = [
         "tRNAscan-SE",  # tRNAscan-SE 的安装路径
-        "A",
         "-o", temp_output_file,  # 输出文件路径
         temp_fasta_file  # 输入的FASTA文件路径
     ]
@@ -37,25 +36,24 @@ def run_trnascan_se(sequence, output_dir):
     return temp_output_file
 
 def parse_trnascan_output(output_file):
-    # 解析tRNAscan-SE的输出文件
+    # 解析tRNAscan-SE的输出文件，获取最后一行数据
     tRNA_data = []
     
     try:
         with open(output_file, 'r') as file:
             lines = file.readlines()
-            for line in lines:
-                if line.startswith("#") or line.startswith("--------"):  # 跳过注释行和分隔符行
-                    continue
-                columns = line.strip().split("\t")
-                if len(columns) >= 9:  # 确保有足够的列
-                    tRNA = {
-                        'tRNA Begin': columns[2],   # Start position (Begin)
-                        'tRNA End': columns[3],     # End position (End)
-                        'tRNA Type': columns[4],    # tRNA Type
-                        'Anticodon': columns[5],    # Codon
-                        'Infernal Score': columns[8]  # Score
-                    }
-                    tRNA_data.append(tRNA)
+            # 只处理最后一行
+            last_line = lines[-1]
+            columns = last_line.strip().split("\t")
+            if len(columns) >= 9:  # 确保有足够的列
+                tRNA = {
+                    'tRNA Begin': columns[2],   # Start position (Begin)
+                    'tRNA End': columns[3],     # End position (End)
+                    'tRNA Type': columns[4],    # tRNA Type
+                    'Anticodon': columns[5],    # Codon
+                    'Infernal Score': columns[8]  # Score
+                }
+                tRNA_data.append(tRNA)
         return tRNA_data
     except Exception as e:
         print(f"Error parsing output file: {e}")
@@ -71,7 +69,7 @@ if __name__ == "__main__":
     # 运行tRNAscan-SE并获取输出文件
     output_file = run_trnascan_se(sequence, output_dir)
     
-    # 解析输出文件
+    # 解析输出文件并获取最后一行
     tRNA_data = parse_trnascan_output(output_file)
     
     # 打印解析结果
