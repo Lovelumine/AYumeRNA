@@ -3,18 +3,23 @@
   <div class="site--main">
     <div class="info-box">
   <h3>Evaluating tRNA Identity Elements with tREX Score</h3>
-  <p>
-    Identity elements are critical sequence and structural features in tRNAs that determine their recognition by aminoacyl-tRNA synthetases (aaRSs) and their ability to carry specific amino acids. Proper identification of these elements is essential to evaluate whether a generated sup-tRNA sequence can function correctly in translation, including the suppression of stop codons.
-  </p>
+
 
   <p>
     To assess the identity elements of generated sup-tRNA sequences, we use the <strong>tREX Score</strong> algorithm. This scoring method compares candidate tRNAs against consensus templates derived from validated reference tRNA datasets to identify conserved positions critical for amino acid binding and identity recognition.
+  </p>
+
+  <p>
+    A <strong>positive tREX Score</strong> indicates that the generated tRNA likely possesses the correct identity elements to carry a specific amino acid and function as a suppressor tRNA (sup-tRNA). These tRNAs are capable of decoding stop codons and participating in protein synthesis with the desired amino acid specificity.
   </p>
 
   <details class="details-box">
     <summary class="details-summary">
       Show More About the Evaluation Process
     </summary>
+    <p>
+    Identity elements are critical sequence and structural features in tRNAs that determine their recognition by aminoacyl-tRNA synthetases (aaRSs) and their ability to carry specific amino acids. Proper identification of these elements is essential to evaluate whether a generated sup-tRNA sequence can function correctly in translation, including the suppression of stop codons.
+  </p>
 
     <p>The reference datasets for scoring identity elements are as follows:</p>
     <ul>
@@ -125,17 +130,15 @@
     />
   </details>
 
-  <p>
-    A <strong>positive tREX Score</strong> indicates that the generated tRNA likely possesses the correct identity elements to carry a specific amino acid and function as a suppressor tRNA (sup-tRNA). These tRNAs are capable of decoding stop codons and participating in protein synthesis with the desired amino acid specificity.
-  </p>
+
 </div>
 
 <div class="parameters-container">
       <h3>Generation Parameters</h3>
-      <p><strong>Anticodon:</strong> {{ aminoAcid }}</p>
+      <p><strong>Codon:</strong> {{ aminoAcid }}</p>
       <p><strong>Domain:</strong> {{ domain }}</p>
 
-      <label for="reverse-codon">Select Reverse Codon:</label>
+      <label for="reverse-codon">Select Amino Acid:</label>
       <select
         id="reverse-codon"
         v-model="selectedReverseCodon"

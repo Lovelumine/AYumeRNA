@@ -5,7 +5,7 @@ import CodonGenerator from '../pages/CondonGenerator/CondonGenerator.vue'
 import VisualizationAnalysis from '../pages/ResultAnalysis/VisualizationAnalysis.vue'
 import SecondaryStructure from '../pages/ResultAnalysis/SecondaryStructure/SecondaryStructure.vue'
 import TertiaryStructure from '../pages/ResultAnalysis/TertiaryStructure/TertiaryStructure.vue'
-import SequenceVerification from '../pages/SequenceVerification/SequenceVerification.vue'
+// import SequenceVerification from '../pages/SequenceVerification/SequenceVerification.vue'
 import TRNAEvaluator from '../pages/TRNAEvaluator/TRNAEvaluator.vue'
 import AminoacylationEvaluation from '../pages/TRNAEvaluator/AminoacylationEvaluation/AminoacylationEvaluation.vue'
 import StructureFoldingEvaluation from '../pages/TRNAEvaluator/StructureFoldingEvaluation/StructureFoldingEvaluation.vue'
@@ -57,15 +57,15 @@ const routes = [
       },
     ],
   },
-  {
-    path: '/sequence-verification',
-    name: 'SequenceVerification',
-    component: SequenceVerification,
-    meta: {
-      description:
-        'Compare generated tRNA sequences with natural tRNA sequences for verification using tRNAscan-SE tool.',
-    },
-  },
+  // {
+  //   path: '/sequence-verification',
+  //   name: 'SequenceVerification',
+  //   component: SequenceVerification,
+  //   meta: {
+  //     description:
+  //       'Compare generated tRNA sequences with natural tRNA sequences for verification using tRNAscan-SE tool.',
+  //   },
+  // },
 
   { path: '/help', name: 'Help', component: Home },
 ]

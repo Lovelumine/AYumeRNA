@@ -2,31 +2,32 @@
   <div class="site--main">
     <h2 class="trna-evaluator">tRNA Evaluator</h2>
     <div class="info-box">
-  <h3>Overview</h3>
-  <p>
-    Welcome to the <strong>tRNA Evaluator</strong>. In the first step, sup-tRNA sequences with special suppressor capabilities were generated using AI. Now, in this second phase, we apply the tREX Score algorithm to evaluate these tRNAs and determine if they can carry specific amino acids and read through stop codons.
-  </p>
-
-  <details class="details-box">
-    <summary class="details-summary">
-      Show More About the First Step
-    </summary>
-    <div class="details-content">
-      <h4>Step 1: Generating sup-tRNA Sequences</h4>
+      <h3>Overview</h3>
       <p>
-        In the first step, computational models and reference datasets were used to generate new sup-tRNA sequences with potential stop codon suppression capabilities. At this stage, the specific amino acids they carry were not yet determined. These sequences serve as candidates for further evaluation in this phase.
+        Welcome to the <strong>tRNA Evaluator</strong>. In the first step, sup-tRNA sequences with special suppressor capabilities were generated using AI. Now, in this second phase, we evaluate these tRNAs and determine if they can carry specific amino acids and read through stop codons.
       </p>
+
+      <details class="details-box">
+        <summary class="details-summary">
+          Show More About the First Step
+        </summary>
+        <div class="details-content">
+          <h4>Step 1: Generating sup-tRNA Sequences</h4>
+          <p>
+            In the first step, computational models and reference datasets were used to generate new sup-tRNA sequences with potential stop codon suppression capabilities. At this stage, the specific amino acids they carry were not yet determined. These sequences serve as candidates for further evaluation in this phase.
+          </p>
+        </div>
+      </details>
     </div>
-  </details>
-</div>
+
     <div class="buttons">
-      <router-link to="/trna-evaluator/aminoacylation">
+      <router-link to="/trna-evaluator/aminoacylation" active-class="active-btn">
         <button class="btn">Aminoacylation Evaluation</button>
       </router-link>
-      <router-link to="/trna-evaluator/structure-folding">
+      <router-link to="/trna-evaluator/structure-folding" active-class="active-btn">
         <button class="btn">Structure Folding Evaluation</button>
       </router-link>
-      <router-link to="/trna-evaluator/identity-elements">
+      <router-link to="/trna-evaluator/identity-elements" active-class="active-btn">
         <button class="btn">Identity Elements Evaluation</button>
       </router-link>
     </div>
@@ -75,10 +76,25 @@
   border: none;
   border-radius: 5px;
   cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .btn:hover {
   background-color: #66b1ff;
+  transform: scale(1.05);
+}
+
+.active-btn {
+  background-color: #ff5c8d;  /* 激活时背景色更鲜艳 */
+  color: white;
+  border: 2px solid #ff5c8d;  /* 激活时加上边框 */
+  font-weight: bold;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);  /* 激活时增加阴影 */
+}
+
+.active-btn:hover {
+  background-color: #ff4a75; /* 激活按钮的悬停状态 */
+  transform: scale(1.05);
 }
 
 .info-box {

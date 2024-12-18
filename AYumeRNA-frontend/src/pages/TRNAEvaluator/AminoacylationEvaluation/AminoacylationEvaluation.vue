@@ -21,26 +21,32 @@
 
     <!-- 结果表格 -->
     <s-table-provider :locale="en">
-    <s-table
-    :columns="columns"
-    :data-source="dataSource"
-    :max-height="500"
-    :pagination="pagination"
-    @pagination-change="onPaginationChange">
-      <template #bodyCell="{ column, record }">
-        <!-- 自定义列显示 -->
-        <template v-if="column.key === 'basePairs'">
-          <span>{{ (record.basePairs || []).slice(0, 3).join(', ') || 'Loading...' }}</span>
+      <s-table
+        :columns="columns"
+        :data-source="dataSource"
+        :max-height="500"
+        :pagination="pagination"
+        @pagination-change="onPaginationChange"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'basePairs'">
+            <span>{{ (record.basePairs || []).slice(0, 3).join(', ') || 'Loading...' }}</span>
+          </template>
+          <template v-else-if="column.key === 'freeEnergy'">
+            <span>{{ record.freeEnergy ?? 'Loading...' }}</span>
+          </template>
+          <template v-else-if="column.key === 'totalFreeEnergy'">
+            <span class="total-energy">{{ calculateTotalEnergy(record.freeEnergy) }}</span>
+          </template>
+          <template v-else-if="column.key === 'actions'">
+            <button class="action-btn" @click="handleAnalyzeSequence(record)">
+              Visualization
+            </button>
+          </template>
         </template>
-        <template v-else-if="column.key === 'freeEnergy'">
-          <span>{{ record.freeEnergy ?? 'Loading...' }}</span>
-        </template>
-        <template v-else-if="column.key === 'totalFreeEnergy'">
-          <span class="total-energy">{{ calculateTotalEnergy(record.freeEnergy) }}</span>
-        </template>
-      </template>
-    </s-table>
-  </s-table-provider>
+      </s-table>
+    </s-table-provider>
+
     <!-- 加载和错误提示 -->
     <div v-if="error" class="error">{{ error }}</div>
   </div>
@@ -48,30 +54,43 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import en from '@shene/table/dist/locale/en'
 import { columns, pagination, onPaginationChange, type SequenceData } from './tableConfig'
 import axios from 'axios'
-import { aminoAcids, calculateFreeEnergy} from './computedata';
-
-
+import { aminoAcids, calculateFreeEnergy } from './computedata'
 
 // 响应式变量
 const dataSource = ref<SequenceData[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
 const selectedAminoAcid = ref<number>(aminoAcids[0].deltaG) // 默认选中第一个
+const router = useRouter()
 
-
-
-// 加载序列数据
+// 加载序列数据并缓存结果
 async function loadSequences() {
   const defaultSeqDataStr = localStorage.getItem('sequences')
+  const timestamp = localStorage.getItem('timestamp_sequences')
+  const cachedDataStr = localStorage.getItem('cached_sequences')
+  const cachedTimestamp = localStorage.getItem('cached_timestamp_sequences')
+
   if (!defaultSeqDataStr) {
     error.value = 'No sequences found in local storage.'
     return
   }
 
   const parsedSequences = JSON.parse(defaultSeqDataStr) as { sequence: string }[]
+
+  // 如果缓存有效，加载缓存数据
+  if (cachedDataStr && timestamp === cachedTimestamp) {
+    console.log('[INFO] Using cached sequence data.')
+    dataSource.value = JSON.parse(cachedDataStr)
+    return
+  }
+
+  console.log('[INFO] Cache invalid, recalculating sequence data.')
+
+  // 更新数据
   dataSource.value = parsedSequences.map((seq, index) => ({
     key: index.toString(),
     sequence: seq.sequence,
@@ -82,23 +101,42 @@ async function loadSequences() {
   }))
 
   loading.value = true
-  for (const seq of dataSource.value) {
-    try {
-      const response = await axios.post('/charge', { sequence: seq.sequence })
-      const data = response.data
-      const tstemSequence = data['T-stem Sequence'] || ''
-      const { basePairs, energy } = calculateFreeEnergy(tstemSequence)
+  try {
+    for (const seq of dataSource.value) {
+      try {
+        const response = await axios.post('/charge', { sequence: seq.sequence })
+        const data = response.data
+        const tstemSequence = data['T-stem Sequence'] || ''
+        const { basePairs, energy } = calculateFreeEnergy(tstemSequence)
 
-      seq.tstemSequence = tstemSequence
-      seq.tstemPosition = data['T-stem Position'] || ''
-      seq.basePairs = basePairs
-      seq.freeEnergy = energy.toFixed(2)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (e) {
-      seq.tstemSequence = 'Error'
+        seq.tstemSequence = tstemSequence
+        seq.tstemPosition = data['T-stem Position'] || ''
+        seq.basePairs = basePairs
+        seq.freeEnergy = energy.toFixed(2)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (e) {
+        seq.tstemSequence = 'Error'
+      }
     }
+
+    // 缓存计算结果和时间戳
+    localStorage.setItem('cached_sequences', JSON.stringify(dataSource.value))
+    localStorage.setItem('cached_timestamp_sequences', timestamp || '')
+    console.log('[INFO] Sequence data cached successfully.')
+  } catch (e) {
+    console.error('[ERROR] Failed to calculate sequence data:', e)
+    error.value = 'Failed to calculate sequence data.'
+  } finally {
+    loading.value = false
   }
-  loading.value = false
+}
+
+// 存储序列并跳转到 /visualization
+function handleAnalyzeSequence(record: SequenceData) {
+  localStorage.setItem('analyzedSequence', JSON.stringify(record))
+  router.push('/visualization').then(() => {
+    console.log('Navigated to /visualization')
+  })
 }
 
 // 计算 Total Free Energy
@@ -153,5 +191,18 @@ onMounted(() => {
 .loading, .error {
   text-align: center;
   margin-top: 20px;
+}
+
+.action-btn {
+  padding: 4px 8px;
+  color: #fff;
+  background-color: #409eff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.action-btn:hover {
+  background-color: #66b1ff;
 }
 </style>
