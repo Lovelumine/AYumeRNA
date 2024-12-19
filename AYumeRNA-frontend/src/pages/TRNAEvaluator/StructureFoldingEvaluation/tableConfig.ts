@@ -1,5 +1,9 @@
+// src/pages/TRNAEvaluator/StructureFoldingEvaluation/tableConfig.ts
 import { ElInputNumber } from 'element-plus'
-import type { STableColumnsType } from '@shene/table'
+import type { STableColumnsType, STableRowSelection } from '@shene/table'
+
+// 定义 Key 类型
+export type Key = string | number
 
 export interface SequenceInfo {
   key: string
@@ -42,7 +46,7 @@ export const columns: STableColumnsType<SequenceInfo> = [
         step: 1, // 设置步进值为 1
         controls: false, // 隐藏增减按钮
       },
-      onFilter: (value, record) => {
+      onFilter: (value: number | null, record: SequenceInfo) => {
         if (value == null) return true;  // 如果没有输入值则不过滤
         const score = parseFloat(record.infernalScore || '0'); // 获取记录中的 Infernal Score
         return score >= value;  // 筛选大于等于用户输入的值
@@ -69,5 +73,22 @@ export const columns: STableColumnsType<SequenceInfo> = [
     key: 'tRNAType',
     width: 80,
   },
-  { title: 'Actions', key: 'actions', width: 100 }
+  {
+    title: 'Actions',
+    key: 'actions',
+    width: 100
+  }
 ]
+
+// 定义 rowSelection 配置
+export const defaultRowSelection: STableRowSelection<SequenceInfo> = {
+  hideSelectAll: false, // 根据需要隐藏全选框
+  onChange: (selectedRowKeys: Key[], selectedRows: SequenceInfo[]) => {
+    console.log(`selectedRowKeys: ${selectedRowKeys}`, 'selectedRows: ', selectedRows)
+  },
+  getCheckboxProps: (record: SequenceInfo) => ({
+    // 根据需要禁用某些行的选择框
+    disabled: record.sequence === '特定序列', // 例如，禁用序列为 '特定序列' 的行
+    name: record.sequence
+  })
+}

@@ -2,7 +2,7 @@
 
 import { ref } from 'vue'
 import axios from 'axios'
-import type { SequenceInfo } from './tableConfig.ts'
+import type { SequenceInfo } from './tableConfig'
 import router from '@/router/index.js'
 
 // 类型定义
