@@ -31,7 +31,7 @@ export function sequencesToFA(seqArr: Sequence[]): string {
 export function loadDefaultSequences(sequences: {
   value: Sequence[]
 }): boolean {
-  const defaultSeqDataStr = localStorage.getItem('sequences')
+  const defaultSeqDataStr = localStorage.getItem('cached_sequences_after_stepone')
   if (!defaultSeqDataStr) return false
   try {
     const parsed = JSON.parse(defaultSeqDataStr) as Sequence[]
@@ -71,7 +71,7 @@ export async function fetchAndReplaceSequences(
     sequences.value = newSequences
 
     const currentTimestampSequences = localStorage.getItem(
-      'timestamp_sequences',
+      'timestamp_cached_sequences_after_stepone',
     )
     if (currentTimestampSequences && lastSubmittedCodon.value) {
       // 只更新本次提交对应的codon数据

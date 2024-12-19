@@ -66,8 +66,8 @@ const selectedAminoAcid = ref<number>(aminoAcids[0].deltaG) // 默认选中第�
 
 // 加载序列数据并缓存结果
 async function loadSequences() {
-  const defaultSeqDataStr = localStorage.getItem('sequences')
-  const timestamp = localStorage.getItem('timestamp_sequences')
+  const defaultSeqDataStr = localStorage.getItem('cached_sequences_after_steptwo')
+  const timestamp = localStorage.getItem('timestamp_cached_sequences_after_steptwo')
   const cachedDataStr = localStorage.getItem('cached_sequences')
   const cachedTimestamp = localStorage.getItem('cached_timestamp_sequences')
 

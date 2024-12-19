@@ -1,139 +1,137 @@
-<!-- src/pages/TReXScore/TRNACompatibilityEvaluator.vue -->
+<!-- src/pages/TRNAEvaluator/IdentityElementsEvaluation/IdentityElementsEvaluation.vue -->
+
 <template>
   <div class="site--main">
     <div class="info-box">
-  <h3>Evaluating tRNA Identity Elements with tREX Score</h3>
+      <h3>Evaluating tRNA Identity Elements with tREX Score</h3>
 
+      <p>
+        To assess the identity elements of generated sup-tRNA sequences, we use the <strong>tREX Score</strong> algorithm. This scoring method compares candidate tRNAs against consensus templates derived from validated reference tRNA datasets to identify conserved positions critical for amino acid binding and identity recognition.
+      </p>
 
-  <p>
-    To assess the identity elements of generated sup-tRNA sequences, we use the <strong>tREX Score</strong> algorithm. This scoring method compares candidate tRNAs against consensus templates derived from validated reference tRNA datasets to identify conserved positions critical for amino acid binding and identity recognition.
-  </p>
+      <p>
+        A <strong>positive tREX Score</strong> indicates that the generated tRNA likely possesses the correct identity elements to carry a specific amino acid and function as a suppressor tRNA (sup-tRNA). These tRNAs are capable of decoding stop codons and participating in protein synthesis with the desired amino acid specificity.
+      </p>
 
-  <p>
-    A <strong>positive tREX Score</strong> indicates that the generated tRNA likely possesses the correct identity elements to carry a specific amino acid and function as a suppressor tRNA (sup-tRNA). These tRNAs are capable of decoding stop codons and participating in protein synthesis with the desired amino acid specificity.
-  </p>
+      <details class="details-box">
+        <summary class="details-summary">
+          Show More About the Evaluation Process
+        </summary>
+        <p>
+          Identity elements are critical sequence and structural features in tRNAs that determine their recognition by aminoacyl-tRNA synthetases (aaRSs) and their ability to carry specific amino acids. Proper identification of these elements is essential to evaluate whether a generated sup-tRNA sequence can function correctly in translation, including the suppression of stop codons.
+        </p>
 
-  <details class="details-box">
-    <summary class="details-summary">
-      Show More About the Evaluation Process
-    </summary>
-    <p>
-    Identity elements are critical sequence and structural features in tRNAs that determine their recognition by aminoacyl-tRNA synthetases (aaRSs) and their ability to carry specific amino acids. Proper identification of these elements is essential to evaluate whether a generated sup-tRNA sequence can function correctly in translation, including the suppression of stop codons.
-  </p>
+        <p>The reference datasets for scoring identity elements are as follows:</p>
+        <ul>
+          <li>
+            Ala (Alanine):
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/Ala.csv"
+              target="_blank"
+              >Ala.csv</a
+            >
+          </li>
+          <li>
+            Arg (Arginine):
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/Arg.csv"
+              target="_blank"
+              >Arg.csv</a
+            >
+          </li>
+          <li>
+            Asn (Asparagine):
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/Asn.csv"
+              target="_blank"
+              >Asn.csv</a
+            >
+          </li>
+          <li>
+            Asp (Aspartic Acid):
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/Asp.csv"
+              target="_blank"
+              >Asp.csv</a
+            >
+          </li>
+          <li>
+            Cys (Cysteine):
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/Cys.csv"
+              target="_blank"
+              >Cys.csv</a
+            >
+          </li>
+          <li>
+            Gly (Glycine):
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/Gly.csv"
+              target="_blank"
+              >Gly.csv</a
+            >
+          </li>
+          <li>
+            His (Histidine):
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/His.csv"
+              target="_blank"
+              >His.csv</a
+            >
+          </li>
+          <li>
+            Trp (Tryptophan):
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/Trp.csv"
+              target="_blank"
+              >Trp.csv</a
+            >
+          </li>
+          <li>
+            Val (Valine):
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/Val.csv"
+              target="_blank"
+              >Val.csv</a
+            >
+          </li>
+        </ul>
 
-    <p>The reference datasets for scoring identity elements are as follows:</p>
-    <ul>
-      <li>
-        Ala (Alanine):
-        <a
-          href="https://minio.lumoxuan.cn/ayumerna/model/Ala.csv"
-          target="_blank"
-          >Ala.csv</a
-        >
-      </li>
-      <li>
-        Arg (Arginine):
-        <a
-          href="https://minio.lumoxuan.cn/ayumerna/model/Arg.csv"
-          target="_blank"
-          >Arg.csv</a
-        >
-      </li>
-      <li>
-        Asn (Asparagine):
-        <a
-          href="https://minio.lumoxuan.cn/ayumerna/model/Asn.csv"
-          target="_blank"
-          >Asn.csv</a
-        >
-      </li>
-      <li>
-        Asp (Aspartic Acid):
-        <a
-          href="https://minio.lumoxuan.cn/ayumerna/model/Asp.csv"
-          target="_blank"
-          >Asp.csv</a
-        >
-      </li>
-      <li>
-        Cys (Cysteine):
-        <a
-          href="https://minio.lumoxuan.cn/ayumerna/model/Cys.csv"
-          target="_blank"
-          >Cys.csv</a
-        >
-      </li>
-      <li>
-        Gly (Glycine):
-        <a
-          href="https://minio.lumoxuan.cn/ayumerna/model/Gly.csv"
-          target="_blank"
-          >Gly.csv</a
-        >
-      </li>
-      <li>
-        His (Histidine):
-        <a
-          href="https://minio.lumoxuan.cn/ayumerna/model/His.csv"
-          target="_blank"
-          >His.csv</a
-        >
-      </li>
-      <li>
-        Trp (Tryptophan):
-        <a
-          href="https://minio.lumoxuan.cn/ayumerna/model/Trp.csv"
-          target="_blank"
-          >Trp.csv</a
-        >
-      </li>
-      <li>
-        Val (Valine):
-        <a
-          href="https://minio.lumoxuan.cn/ayumerna/model/Val.csv"
-          target="_blank"
-          >Val.csv</a
-        >
-      </li>
-    </ul>
+        <p>
+          These files contain consensus tRNA sequences used to align and identify conserved nucleotide positions contributing to tRNA identity.
+        </p>
 
-    <p>
-      These files contain consensus tRNA sequences used to align and identify conserved nucleotide positions contributing to tRNA identity.
-    </p>
+        <p>
+          After performing a multiple sequence alignment (MSA) on the templates, the following scoring formulas are applied:
+        </p>
 
-    <p>
-      After performing a multiple sequence alignment (MSA) on the templates, the following scoring formulas are applied:
-    </p>
+        <img
+          src="https://minio.lumoxuan.cn/ayumerna/picture/formula_1.png"
+          alt="Formula 1"
+          class="formula-image-1"
+        />
 
-    <img
-      src="https://minio.lumoxuan.cn/ayumerna/picture/formula_1.png"
-      alt="Formula 1"
-      class="formula-image-1"
-    />
+        <p>
+          For each test tRNA sequence, conserved positions <math>i ∈ C</math> are scored as follows:
+        </p>
+        <img
+          src="https://minio.lumoxuan.cn/ayumerna/picture/formula_2.png"
+          alt="Formula 2"
+          class="formula-image-2"
+        />
 
-    <p>
-      For each test tRNA sequence, conserved positions <math>i ∈ C</math> are scored as follows:
-    </p>
-    <img
-      src="https://minio.lumoxuan.cn/ayumerna/picture/formula_2.png"
-      alt="Formula 2"
-      class="formula-image-2"
-    />
+        <p>
+          Finally, the cumulative tREX Score is computed as:
+        </p>
+        <img
+          src="https://minio.lumoxuan.cn/ayumerna/picture/formula_3.png"
+          alt="Formula 3"
+          class="formula-image-3"
+        />
+      </details>
+    </div>
 
-    <p>
-      Finally, the cumulative tREX Score is computed as:
-    </p>
-    <img
-      src="https://minio.lumoxuan.cn/ayumerna/picture/formula_3.png"
-      alt="Formula 3"
-      class="formula-image-3"
-    />
-  </details>
-
-
-</div>
-
-<div class="parameters-container">
+    <div class="parameters-container">
       <h3>Generation Parameters</h3>
       <p><strong>Codon:</strong> {{ aminoAcid }}</p>
       <p><strong>Domain:</strong> {{ domain }}</p>
@@ -174,8 +172,6 @@
 
     <TableWithAction
       :data-source="sequences"
-      @download-selected="downloadSelectedResults"
-
     />
   </div>
 </template>
@@ -195,6 +191,7 @@ import {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   lastSubmittedCodon,
 } from './logic'
+
 // 定义响应式变量
 const generationParameters = ref<GenerationParameters>({
   model: '',
@@ -214,29 +211,8 @@ const selectedReverseCodon = ref<string>(reverseCodonOptions[0])
 const wsUrl = '/sockjs/ws'
 const subscribeUrl = '/topic/progress/1'
 
-// 下载选中的结果
-function downloadSelectedResults(selectedRows: Sequence[]) {
-  if (!selectedRows.length) {
-    alert('No rows selected to download.')
-    return
-  }
-  console.log('Downloading selected rows:', selectedRows)
-  const content = selectedRows
-    .map(
-      row =>
-        `Sequence: ${row.sequence}, tREX Score: ${row.trexScore ?? 'Please select Amino Acid'}`,
-    )
-    .join('\n')
-  const blob = new Blob([content], { type: 'text/plain' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = 'selected_results.txt'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
-}
+// 移除 downloadSelectedResults 函数，因为下载在子组件中处理
+// 如果该函数在其他地方使用，请保留
 
 // 下载全部结果
 function downloadResult() {
@@ -479,7 +455,8 @@ onMounted(() => {
 })
 </script>
 
-<style >
+<style>
+/* 你的样式内容 */
 .site--main {
   padding: 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
