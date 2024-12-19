@@ -50,7 +50,6 @@
 </template>
 
 <script setup lang="ts">
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { onMounted } from 'vue'
 import en from '@shene/table/dist/locale/en'
 import { columns } from './tableConfig'

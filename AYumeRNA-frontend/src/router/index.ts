@@ -14,7 +14,9 @@ import AboutPage from '../pages/AboutPage/AboutPage.vue'
 
 
 const routes = [
-  { path: '/', name: 'Sequence Generator', component: CodonGenerator },
+
+  { path: '/', name: 'Home', component: Home },
+  { path: '/CodonGenerator', name: 'Sequence Generator', component: CodonGenerator },
   {
     path: '/trna-evaluator',
     name: 'TRNAEvaluator',
@@ -70,7 +72,6 @@ const routes = [
   //   },
   // },
 
-  { path: '/help', name: 'Help', component: Home },
   { path: '/about', name: 'About', component: AboutPage },
 ]
 

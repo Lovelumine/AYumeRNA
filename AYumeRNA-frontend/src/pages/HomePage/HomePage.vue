@@ -4,7 +4,7 @@
     <div class="intro">
       <h1>Welcome to <span class="highlight">iSEE-tRNA</span></h1>
       <p>The Ultimate Tool for Generating, Evaluating, and Visualizing Engineered sup-tRNA Sequences</p>
-      <router-link to="/">
+      <router-link to="/CodonGenerator">
         <button class="start-btn">Start Generating</button>
       </router-link>
     </div>
