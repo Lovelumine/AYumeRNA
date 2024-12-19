@@ -92,6 +92,7 @@ const filteredRoutes = computed(() =>
 .title {
   font-size: 1.2em;
   font-weight: bold;
+  color: #ffffff;
 }
 
 .toggle-btn {

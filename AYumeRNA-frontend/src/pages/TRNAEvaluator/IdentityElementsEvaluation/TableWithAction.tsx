@@ -1,8 +1,9 @@
+import { ElInputNumber } from 'element-plus'
 import { defineComponent, ref, type PropType } from 'vue'
-import { STable, STableProvider } from '@shene/table'
+import type { SortOrder } from '@shene/table/dist/src/types/table'
+import STable, { STableProvider } from '@shene/table'
 import ActionLink from './ActionLink'
 import en from '@shene/table/dist/locale/en'
-import type { SortOrder } from '@shene/table/dist/src/types/table'
 import styles from './TableWithAction.module.css'
 
 interface TableRow {
@@ -23,23 +24,6 @@ const TableWithAction = defineComponent({
     const selectedRowKeys = ref<(string | number)[]>([]) // 用于存储选中的行键
     const selectedRows = ref<TableRow[]>([]) // 存储选中行的完整数据
 
-    // 自定义行点击行为
-    const customRow = ({ record }: { record: TableRow }) => {
-      if (!record) return {}
-      return {
-        onClick: () => {
-          const index = selectedRowKeys.value.indexOf(record.sequence)
-          if (index > -1) {
-            selectedRowKeys.value.splice(index, 1)
-          } else {
-            selectedRowKeys.value.push(record.sequence)
-          }
-          console.log('Updated selectedRowKeys:', selectedRowKeys.value)
-        },
-        style: { cursor: 'pointer' },
-      }
-    }
-
     // 定义表格列
     const displayedColumns = [
       {
@@ -59,6 +43,24 @@ const TableWithAction = defineComponent({
         ellipsis: true,
         className: 'trex-score-column',
         resizable: true,
+        filter: {
+          component: ElInputNumber,  // 使用 ElInputNumber 组件
+          props: {
+            placeholder: 'Enter minimum Score',
+            style: { width: '150px' },
+            min: 0,  // 设置最小值为 0
+            step: 1, // 设置步进值为 1
+            controls: false, // 隐藏增减按钮
+          },
+          onFilter: (
+            value: number | null,
+            record: TableRow
+          ) => {
+            if (value == null) return true;  // 如果没有输入值则不过滤
+            const score = record.trexScore ?? 0; // 获取记录中的 tREX Score
+            return score >= value;  // 筛选大于等于用户输入的值
+          },
+        },
         customRender: ({ record }: { record: TableRow }) => {
           const { trexScore } = record
           return trexScore === null ? 'Not Calculated' : trexScore.toFixed(2)
@@ -93,7 +95,6 @@ const TableWithAction = defineComponent({
             v-model:selectedRowKeys={selectedRowKeys.value}
             columns={displayedColumns}
             dataSource={props.dataSource}
-            customRow={customRow}
             row-selection="rowSelection"
             highlight-selected
             stripe
@@ -107,7 +108,6 @@ const TableWithAction = defineComponent({
               onChange: (keys: (string | number)[], rows: TableRow[]) => {
                 selectedRowKeys.value = keys
                 selectedRows.value = rows
-                console.log('Selected rows updated:', rows)
               },
             }}
             rowKey="sequence"

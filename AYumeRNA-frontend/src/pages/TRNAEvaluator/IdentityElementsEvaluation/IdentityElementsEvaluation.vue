@@ -477,11 +477,9 @@ onMounted(() => {
     }
   }
 })
-
-
 </script>
 
-<style scoped>
+<style >
 .site--main {
   padding: 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -629,5 +627,18 @@ onMounted(() => {
   height: auto;
   max-width: 30%; /* 根据图片原比例缩放 */
   width: auto;
+}
+
+.action-btn {
+  padding: 4px 8px;
+  color: #fff;
+  background-color: #409eff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.action-btn:hover {
+  background-color: #66b1ff;
 }
 </style>

@@ -1,3 +1,4 @@
+<!-- src/pages/TRNAEvaluator/AminoacylationEvaluation/AminoacylationEvaluation.vue -->
 <template>
   <div class="free-energy-evaluation">
     <h3 class="title">The affinity between aa-tRNAs and EF-Tu</h3>
@@ -35,9 +36,7 @@
           <template v-else-if="column.key === 'freeEnergy'">
             <span>{{ record.freeEnergy ?? 'Loading...' }}</span>
           </template>
-          <template v-else-if="column.key === 'totalFreeEnergy'">
-            <span class="total-energy">{{ calculateTotalEnergy(record.freeEnergy) }}</span>
-          </template>
+          <!-- 移除直接渲染 totalFreeEnergy 的部分 -->
           <template v-else-if="column.key === 'actions'">
             <button class="action-btn" @click="handleAnalyzeSequence(record)">
               Visualization
@@ -53,18 +52,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import en from '@shene/table/dist/locale/en'
 import { columns, pagination, onPaginationChange, type SequenceData } from './tableConfig'
 import axios from 'axios'
-import { aminoAcids, calculateFreeEnergy ,handleAnalyzeSequence} from './computedata'
+import { aminoAcids, calculateFreeEnergy, handleAnalyzeSequence } from './computedata'
 
 // 响应式变量
 const dataSource = ref<SequenceData[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
 const selectedAminoAcid = ref<number>(aminoAcids[0].deltaG) // 默认选中第一个
-
 
 // 加载序列数据并缓存结果
 async function loadSequences() {
@@ -89,14 +87,15 @@ async function loadSequences() {
 
   console.log('[INFO] Cache invalid, recalculating sequence data.')
 
-  // 更新数据
+  // 初始化数据
   dataSource.value = parsedSequences.map((seq, index) => ({
     key: index.toString(),
     sequence: seq.sequence,
     tstemSequence: '',
     tstemPosition: '',
     basePairs: [],
-    freeEnergy: ''
+    freeEnergy: '',
+    totalFreeEnergy: 0, // 初始化为0
   }))
 
   loading.value = true
@@ -112,9 +111,16 @@ async function loadSequences() {
         seq.tstemPosition = data['T-stem Position'] || ''
         seq.basePairs = basePairs
         seq.freeEnergy = energy.toFixed(2)
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // 计算并赋值 totalFreeEnergy
+        const parsedFreeEnergy = parseFloat(seq.freeEnergy)
+        seq.totalFreeEnergy = isNaN(parsedFreeEnergy) ? 0 : calculateTotalEnergy(parsedFreeEnergy)
       } catch (e) {
+        console.error(`[ERROR] Failed to process sequence: ${seq.sequence}`, e)
         seq.tstemSequence = 'Error'
+        seq.tstemPosition = 'Error'
+        seq.basePairs = []
+        seq.freeEnergy = 'Error'
+        seq.totalFreeEnergy = 0 // 出错时设置为0或其他默认值
       }
     }
 
@@ -130,18 +136,26 @@ async function loadSequences() {
   }
 }
 
-
-
 // 计算 Total Free Energy
-function calculateTotalEnergy(freeEnergy?: string): string {
-  if (!freeEnergy) return 'Loading...'
-  return (parseFloat(freeEnergy) + selectedAminoAcid.value).toFixed(2)
+function calculateTotalEnergy(freeEnergy: number): number {
+  return freeEnergy + selectedAminoAcid.value
 }
+
+// 监听 selectedAminoAcid 的变化，重新计算 totalFreeEnergy
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+watch(selectedAminoAcid, (newVal) => {
+  dataSource.value.forEach(record => {
+    const freeEnergy = parseFloat(record.freeEnergy)
+    record.totalFreeEnergy = isNaN(freeEnergy) ? 0 : calculateTotalEnergy(freeEnergy)
+  })
+})
 
 // 页面加载时执行
 onMounted(() => {
   loadSequences()
 })
+
+// 处理分析序列的函数（保持不变）
 </script>
 
 <style scoped>
