@@ -10,6 +10,8 @@ import TRNAEvaluator from '../pages/TRNAEvaluator/TRNAEvaluator.vue'
 import AminoacylationEvaluation from '../pages/TRNAEvaluator/AminoacylationEvaluation/AminoacylationEvaluation.vue'
 import StructureFoldingEvaluation from '../pages/TRNAEvaluator/StructureFoldingEvaluation/StructureFoldingEvaluation.vue'
 import IdentityElementsEvaluation from '../pages/TRNAEvaluator/IdentityElementsEvaluation/IdentityElementsEvaluation.vue'
+import AboutPage from '../pages/AboutPage/AboutPage.vue'
+
 
 const routes = [
   { path: '/', name: 'Sequence Generator', component: CodonGenerator },
@@ -18,11 +20,7 @@ const routes = [
     name: 'TRNAEvaluator',
     component: TRNAEvaluator,
     children: [
-      {
-        path: 'aminoacylation',
-        name: 'Aminoacylation Evaluation',
-        component: AminoacylationEvaluation,
-      },
+
       {
         path: 'structure-folding',
         name: 'StructureFolding Evaluation',
@@ -32,6 +30,11 @@ const routes = [
         path: 'identity-elements',
         name: 'IdentityElements Evaluation',
         component: IdentityElementsEvaluation,
+      },
+      {
+        path: 'aminoacylation',
+        name: 'The affinity between aa-tRNAs and EF-Tu',
+        component: AminoacylationEvaluation,
       },
     ],
   },
@@ -68,6 +71,7 @@ const routes = [
   // },
 
   { path: '/help', name: 'Help', component: Home },
+  { path: '/about', name: 'About', component: AboutPage },
 ]
 
 const router = createRouter({

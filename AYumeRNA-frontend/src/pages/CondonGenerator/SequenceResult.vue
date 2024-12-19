@@ -31,7 +31,7 @@
       The sequences are ready for analysis.
     </p>
     <button v-if="sequences.length" class="analysis-btn" @click="goToAnalysis">
-      Next Step: Analysis
+      Next Step: Evaluator
     </button>
   </div>
 </template>

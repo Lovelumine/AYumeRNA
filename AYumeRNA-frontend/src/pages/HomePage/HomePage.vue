@@ -2,44 +2,44 @@
   <div class="home">
     <!-- 介绍部分 -->
     <div class="intro">
-      <h1>Welcome to <span class="highlight">AYumeRNA</span></h1>
-      <p>The Ultimate Tool for Generating Stop Codon-Decoding Sup-tRNA Sequences</p>
-      <router-link to="/generator">
+      <h1>Welcome to <span class="highlight">iSEE-tRNA</span></h1>
+      <p>The Ultimate Tool for Generating, Evaluating, and Visualizing Engineered sup-tRNA Sequences</p>
+      <router-link to="/">
         <button class="start-btn">Start Generating</button>
       </router-link>
     </div>
 
     <!-- 描述部分 -->
     <div class="description">
-      <h2><span class="highlight">AYumeRNA</span>: Innovating tRNA with Stop Codon Decoding Capability</h2>
+      <h2><span class="highlight">iSEE-tRNA</span>: Innovating tRNA with Stop Codon Decoding Capability</h2>
       <p>
-        <span class="highlight">AYumeRNA</span>, derived from "Aim Your Dream," is dedicated to enabling users to generate sup-tRNA sequences capable of decoding stop codons. This tool simplifies the process of designing tRNA sequences, even for those without prior knowledge of FASTA files or tRNA structures. Users can specify the desired amino acid and receive the corresponding tRNA sequence, tailored to decode stop codons such as UAA, UAG, and UGA.
+        <span class="highlight">iSEE-tRNA</span>, derived from "Integrated Stop codon Decoding for Engineered tRNA," is dedicated to enabling users to generate sup-tRNA sequences capable of decoding stop codons. This tool simplifies the process of designing tRNA sequences, even for those without prior knowledge of FASTA files or tRNA structures. Users can specify the desired amino acid and receive the corresponding tRNA sequence, tailored to decode stop codons such as UAA, UAG, and UGA.
       </p>
       <p>
-        The project empowers scientists by automating the creation of <span class="highlight">sup-tRNA</span> sequences that decode stop codons. With features like amino acid customization, species selection, and codon adjustments, <span class="highlight">AYumeRNA</span> caters to various experimental setups. The backend implements advanced substitution and filtering methods, ensuring the generated sequences maintain biological functionality.
+        The project empowers scientists by automating the creation of <span class="highlight">sup-tRNA</span> sequences that decode stop codons. With features like amino acid customization, species selection, and codon adjustments, <span class="highlight">iSEE-tRNA</span> caters to various experimental setups. The backend implements advanced substitution and filtering methods, ensuring the generated sequences maintain biological functionality.
       </p>
       <div class="scg-container">
         <!-- 使用 Font Awesome 图标 -->
         <i class="fas fa-flask scg-icon"></i>
         <p class="scg-description">
-          <span class="highlight">AYumeRNA</span> is designed to address the needs of the modern scientific community, allowing researchers to bypass complex manual sequence generation and focus on analyzing the sequences for critical research outcomes.
+          <span class="highlight">iSEE-tRNA</span> is designed to address the needs of the modern scientific community, allowing researchers to bypass complex manual sequence generation and focus on analyzing the sequences for critical research outcomes.
         </p>
       </div>
 
       <h3>Customizable Amino Acid Codon Generator</h3>
       <p>
-        <span class="highlight">AYumeRNA</span> allows users to design custom codons, generating a series of tRNA sequences. These sequences are evaluated and scored based on their efficiency in decoding specific stop codons. The tool integrates sophisticated structure prediction techniques, such as AlphaFold for tertiary structure and R2DT for secondary structure, to enhance sequence validity.
+        <span class="highlight">iSEE-tRNA</span> allows users to design custom codons, generating a series of tRNA sequences. These sequences are evaluated and scored based on their efficiency in decoding specific stop codons. The tool integrates sophisticated structure prediction techniques, such as AlphaFold for tertiary structure and R2DT for secondary structure, to enhance sequence validity.
       </p>
       <p>
-        Furthermore, <span class="highlight">AYumeRNA</span> considers protein-binding interactions and aminoacyl-tRNA synthetase (ARS) activity, ensuring that the generated tRNA sequences can effectively participate in translation processes. This integration of structural and functional analysis makes <span class="highlight">AYumeRNA</span> a robust tool for cutting-edge molecular biology research.
+        Furthermore, <span class="highlight">iSEE-tRNA</span> considers protein-binding interactions and aminoacyl-tRNA synthetase (ARS) activity, ensuring that the generated tRNA sequences can effectively participate in translation processes. This integration of structural and functional analysis makes <span class="highlight">iSEE-tRNA</span> a robust tool for cutting-edge molecular biology research.
       </p>
 
       <h3>Using Tools like tRNAscan-SE for Sequence Validation</h3>
       <p>
-        To ensure the validity and functionality of the generated tRNA sequences, <span class="highlight">AYumeRNA</span> integrates tools like <a href="https://lowelab.ucsc.edu/tRNAscan-SE/" target="_blank">tRNAscan-SE</a>. This tool is designed to scan known tRNA sequences and identify functional tRNA genes by analyzing their structural features.
+        To ensure the validity and functionality of the generated tRNA sequences, <span class="highlight">iSEE-tRNA</span> integrates tools like <a href="https://lowelab.ucsc.edu/tRNAscan-SE/" target="_blank">tRNAscan-SE</a>. This tool is designed to scan known tRNA sequences and identify functional tRNA genes by analyzing their structural features.
       </p>
       <p>
-        After generating the tRNA sequences, the backend compares them with sequences derived from tRNAscan-SE to identify functional tRNAs in the natural world. By comparing these sequences with known functional tRNAs, <span class="highlight">AYumeRNA</span> can validate the generated sequences for their biological relevance and ensure that they meet the standards of real-world tRNA functionality.
+        After generating the tRNA sequences, the backend compares them with sequences derived from tRNAscan-SE to identify functional tRNAs in the natural world. By comparing these sequences with known functional tRNAs, <span class="highlight">iSEE-tRNA</span> can validate the generated sequences for their biological relevance and ensure that they meet the standards of real-world tRNA functionality.
       </p>
       <p>
         This comparison and validation process enables the identification of potential errors and guarantees that the generated tRNA sequences align with natural, functional tRNAs. It also helps to eliminate sequences that are likely non-functional or unsuitable for specific applications, increasing the reliability of the tool.
