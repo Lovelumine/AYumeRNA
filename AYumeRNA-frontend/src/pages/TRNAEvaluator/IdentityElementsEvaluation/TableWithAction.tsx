@@ -134,7 +134,7 @@ const TableWithAction = defineComponent({
       // 存储选中的序列到 localStorage
       localStorage.setItem('cached_sequences_after_steptwo', JSON.stringify(selectedRows.value))
 
-      // 跳转到 The affinity between aa-tRNAs and EF-Tu 页面
+      // 跳转到 The affinity between aa-tRNAs and release factor 页面
       router.push('/trna-evaluator/aminoacylation').then(() => {
         console.log('Navigated to /trna-evaluator/aminoacylation')
       })
@@ -155,7 +155,7 @@ const TableWithAction = defineComponent({
             onClick={navigateToAffinityElements}
             disabled={selectedRows.value.length === 0}
           >
-            Navigate to The affinity between aa-tRNAs and EF-Tu
+            Navigate to The affinity between aa-tRNAs and release factor
           </button>
         </div>
 

@@ -1,7 +1,7 @@
 <!-- src/pages/TRNAEvaluator/AminoacylationEvaluation/AminoacylationEvaluation.vue -->
 <template>
   <div class="free-energy-evaluation">
-    <h3 class="title">The affinity between aa-tRNAs and EF-Tu</h3>
+    <h3 class="title">The affinity between aa-tRNAs and release factor</h3>
     <p class="description">
       Select an amino acid to dynamically update the free energy contributions for each sequence.
       The total free energy includes the amino acid ΔΔG° and contributions from the tRNA T-stem base pairs.

@@ -19,7 +19,7 @@ const routes = [
   { path: '/CodonGenerator', name: 'Sequence Generator', component: CodonGenerator },
   {
     path: '/trna-evaluator',
-    name: 'TRNAEvaluator',
+    name: 'tRNAEvaluator',
     component: TRNAEvaluator,
     children: [
 
@@ -35,7 +35,7 @@ const routes = [
       },
       {
         path: 'aminoacylation',
-        name: 'The affinity between aa-tRNAs and EF-Tu',
+        name: 'The affinity between aa-tRNAs and release factor',
         component: AminoacylationEvaluation,
       },
     ],

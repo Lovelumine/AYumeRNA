@@ -29,7 +29,7 @@
         <button class="btn">Identity Elements Evaluation</button>
       </router-link>
       <router-link to="/trna-evaluator/aminoacylation" active-class="active-btn">
-        <button class="btn">The affinity between aa-tRNAs and EF-Tu</button>
+        <button class="btn">The affinity between aa-tRNAs and release factor</button>
       </router-link>
     </div>
 
