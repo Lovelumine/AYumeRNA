@@ -1,3 +1,4 @@
+<!-- src/pages/AboutPage/AboutPage.vue -->
 <template>
   <div class="site--main">
     <div class="container-fluid">
@@ -20,21 +21,20 @@
           </address>
           <address class="mail">
             <strong>Qiuhui Wu:</strong>
-            <el-link href="mailto:shendekoudai@lovelumine.com">wuqh29@mail2.sysu.edu.cn</el-link>
+            <el-link href="mailto:wuqh29@mail2.sysu.edu.cn">wuqh29@mail2.sysu.edu.cn</el-link>
             <br>College of Agriculture and Biotechnology, Sun Yat-sen University, Shenzhen, 518107, P. R. China
           </address>
         </div>
       </el-card>
 
       <!-- Tools Card -->
-      <br>
       <el-card shadow="hover" class="box-card tools-card">
         <h2>Our Tools</h2>
         <p class="info-text">
           In addition to <span class="highlight">iSEE-tRNA</span>, we have developed several databases and software designed to investigate the biological functions and mechanisms of various RNAs in biological processes.
         </p>
         <div class="tools-grid">
-          <tool-card
+          <ToolCard
             v-for="(tool, index) in tools"
             :key="index"
             :link="tool.link"
@@ -43,6 +43,7 @@
             :title="tool.title"
             :description="tool.description"
           />
+          <!-- 可以在此添加更多工具 -->
         </div>
       </el-card>
     </div>
@@ -50,24 +51,80 @@
 </template>
 
 <script lang="ts">
+import ToolCard from './ToolCard.vue' // 导入 ToolCard 组件
 
 export default {
-  name: 'ContactPage',
+  name: 'AboutPage',
   components: {
-
+    ToolCard
   },
   data() {
     return {
       tools: [
-        {
-          title: 'RMBase V2.0',
-          link: 'http://rna.sysu.edu.cn/rmbase/',
-          imageSrc: 'https://rna.sysu.edu.cn/rmbase3/pictures/contact/rmBaseLogo.png',
-          imageAlt: 'RMBase Logo',
-          description: 'Decoding the RNA modification map from epitranscriptome sequencing data. (Xuan et al. Nucleic Acids Res. 2018 Jan 4;46(D1):D327-34.)'
-        },
-        // ... other tools
-      ]
+  {
+    title: 'RMBase V2.0',
+    link: 'http://rna.sysu.edu.cn/rmbase/',
+    imageSrc: 'https://rna.sysu.edu.cn/rmbase3/pictures/contact/rmBaseLogo.png',
+    imageAlt: 'RMBase Logo',
+    description: 'Deciphering the Map of RNA Modifications from Epitranscriptome Sequencing Data. (Xuan et al. Nucleic Acids Res. 2018 Jan 4;46(D1):D327-34.)'
+  },
+  {
+    title: 'ENCORI',
+    link: 'http://starbase.sysu.edu.cn/index.php',
+    imageSrc: 'https://rna.sysu.edu.cn/rmbase3/pictures/contact/starBase_logo.png',
+    imageAlt: 'StarBase Logo',
+    description: 'A database for exploring miRNA-mRNA and miRNA-ncRNA interaction maps from Argonaute and other RBP CLIP-Seq data. (Li et al. Nucleic Acids Res. 2014;42:D92-7.)'
+  },
+  {
+    title: 'ChIPBase v2.0',
+    link: 'http://rna.sysu.edu.cn/chipbase',
+    imageSrc: 'https://rna.sysu.edu.cn/rmbase3/pictures/contact/contact-chipbase-logo.png',
+    imageAlt: 'ChIPBase Logo',
+    description: 'Decoding transcriptional regulatory networks of non-coding RNAs and protein-coding genes from ChIP-seq data. (Zhou et al. Nucleic Acids Res. 2017 Jan 04;45(D1):D43-D50.)'
+  },
+  {
+    title: 'StarScan',
+    link: 'http://rna.sysu.edu.cn/dreamBase/',
+    imageSrc: 'https://rna.sysu.edu.cn/rmbase3/pictures/contact/contact-dreambase-logo.png',
+    imageAlt: 'dreamBase Logo',
+    description: 'A web server for scanning small RNA targets from degradome sequencing data. (Liu et al. Nucleic Acids Res. 2015 May 18.)'
+  },
+  {
+    title: 'deepBase v3.0',
+    link: 'http://deepbase.sysu.edu.cn/SnoSeekerNGS.php',
+    imageSrc: 'https://rna.sysu.edu.cn/rmbase3/pictures/contact/contact-snoseeker-logo.png',
+    imageAlt: 'snoSeeker Logo',
+    description: 'deepBase v3.0: expression atlas and interactive analysis of ncRNAs from thousands of deep-sequencing data. (Xie et al. Nucleic Acids Res. 2021 Jan 8;49(D1):D877-D883.)'
+  },
+  {
+    title: 'tRF2Cancer',
+    link: 'http://rna.sysu.edu.cn/tRFfinder/',
+    imageSrc: 'https://rna.sysu.edu.cn/rmbase3/pictures/contact/contact-tRF2Cancer-logo.png',
+    imageAlt: 'tRF2Cancer Logo',
+    description: 'A web server to detect tRNA-derived small RNA fragments (tRFs) and their expression in multiple cancers. (Zheng et al. Nucleic Acids Res. 2016 Jul 8;44(W1):W185-93.)'
+  },
+  {
+    title: 'dreamBase',
+    link: 'http://mirlab.sysu.edu.cn/starscan/index.php',
+    imageSrc: 'https://rna.sysu.edu.cn/rmbase3/pictures/contact/contact-starscan-logo.png',
+    imageAlt: 'StarScan Logo',
+    description: 'DNA modification, RNA regulation and protein binding of expressed pseudogenes in human health and disease. (Zheng et al. Nucleic Acids Res. 2018 Jan 4;46(D1):D85-D91.)'
+  },
+  {
+    title: 'snoSeeker',
+    link: 'http://rna.sysu.edu.cn/deepbase3/',
+    imageSrc: 'https://rna.sysu.edu.cn/rmbase3/pictures/contact/deepbase3.png',
+    imageAlt: 'deepBase Logo',
+    description: 'An advanced computational package for screening of guide and orphan snoRNA genes in the human genome. (Yang et al. Nucleic Acids Res. 2006;34:5112-5123.)'
+  },
+  {
+    title: 'Pol3Base',
+    link: 'https://rna.sysu.edu.cn/pol3base/index.php',
+    imageSrc: 'https://rna.sysu.edu.cn/rmbase3/pictures/contact/pol3base_logo.svg',
+    imageAlt: 'Pol3Base Logo',
+    description: 'Pol3Base: a resource for decoding the interactome, expression, evolution, epitranscriptome and disease variations of Pol III-transcribed ncRNAs. (Li Cai, Jiajia Xuan, et al. Nucleic Acids Res. 2021 Oct 15.)'
+  }
+]
     }
   }
 }
@@ -75,71 +132,73 @@ export default {
 
 <style scoped>
 .site--main {
-  padding: 20px;
+  padding: 40px 20px;
+  background-color: #f5f5f5;
+  min-height: 100vh;
 }
 
 .container-fluid {
-  background-color: #e1f5fe;
-  padding: 30px;
-  text-align: justify;
-  color: #0d47a1;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .box-card {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
   border-radius: 10px;
 }
 
 .contact-card,
 .tools-card {
   background-color: #ffffff;
+  padding: 30px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.tools-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
-}
-
-.tool-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  background-color: #e3f2fd;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
-}
-
-.tool-card:hover {
-  transform: scale(1.05);
-}
-
-.tool-card h4 {
-  margin: 10px 0;
-  font-size: 16px;
+.contact-card h2,
+.tools-card h2 {
+  color: #0d47a1;
+  margin-bottom: 20px;
 }
 
 .info-text {
-  font-size: 14px;
+  font-size: 16px;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 25px;
+}
+
+.highlight {
+  color: #d32f2f; /* 红色突出显示 */
+  font-weight: bold;
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.mail {
+  font-style: normal;
+}
+
+.mail strong {
+  color: #0d47a1;
 }
 
 .mail a {
   text-decoration: none;
-  color: #0d47a1;
+  color: #1976d2;
   font-weight: bold;
 }
 
-.tool-image {
-  max-width: 100%;
-  max-height: 150px;
-  object-fit: contain;
+.mail a:hover {
+  text-decoration: underline;
 }
 
-@media (max-width: 1200px) {
-  /* Additional responsive styles if needed */
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
 }
 </style>
