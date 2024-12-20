@@ -23,13 +23,13 @@
     <div class="buttons">
 
       <router-link to="/trna-evaluator/structure-folding" active-class="active-btn">
-        <button class="btn">Structure Folding Evaluation</button>
+        <button class="btn">1、Structure Folding Evaluation</button>
       </router-link>
       <router-link to="/trna-evaluator/identity-elements" active-class="active-btn">
-        <button class="btn">Identity Elements Evaluation</button>
+        <button class="btn">2、Identity Elements Evaluation</button>
       </router-link>
       <router-link to="/trna-evaluator/aminoacylation" active-class="active-btn">
-        <button class="btn">The affinity between aa-tRNAs and release factor</button>
+        <button class="btn">3、The affinity between aa-tRNAs and release factor</button>
       </router-link>
     </div>
 

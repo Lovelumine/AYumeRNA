@@ -11,7 +11,7 @@ import AminoacylationEvaluation from '../pages/TRNAEvaluator/AminoacylationEvalu
 import StructureFoldingEvaluation from '../pages/TRNAEvaluator/StructureFoldingEvaluation/StructureFoldingEvaluation.vue'
 import IdentityElementsEvaluation from '../pages/TRNAEvaluator/IdentityElementsEvaluation/IdentityElementsEvaluation.vue'
 import AboutPage from '../pages/AboutPage/AboutPage.vue'
-
+import HelpPage from '../pages/HelpPage/HelpPage.vue'
 
 const routes = [
 
@@ -71,7 +71,7 @@ const routes = [
   //       'Compare generated tRNA sequences with natural tRNA sequences for verification using tRNAscan-SE tool.',
   //   },
   // },
-
+  { path: '/help', name: 'Help', component: HelpPage },
   { path: '/about', name: 'About', component: AboutPage },
 ]
 
