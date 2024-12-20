@@ -173,6 +173,15 @@
     <TableWithAction
       :data-source="sequences"
     />
+
+    <!-- 自定义弹出提示框 -->
+    <div v-if="showCustomModal" class="modal-overlay" @click.self="closeModal">
+      <div class="modal-content">
+        <h3>Warning</h3>
+        <p>Please select at least one sequence first.</p>
+        <button class="modal-button" @click="closeModal">OK</button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -227,6 +236,14 @@ function downloadResult() {
 }
 
 let clientInstance: Client | null = null
+
+// 添加自定义弹出提示框的状态变量
+const showCustomModal = ref(false)
+
+// 关闭弹出提示框的方法
+const closeModal = () => {
+  showCustomModal.value = false
+}
 
 // 连接 WebSocket
 function connectWebSocket() {
@@ -388,6 +405,9 @@ onMounted(() => {
   } else {
     selectedReverseCodon.value = reverseCodonOptions[0]
   }
+
+  // 调用 onReverseCodonChange 以使用默认选项加载数据
+  onReverseCodonChange()
 
   const hasDefault = loadDefaultSequences(sequences)
   if (!hasDefault) {
@@ -616,6 +636,56 @@ onMounted(() => {
 }
 
 .action-btn:hover {
+  background-color: #66b1ff;
+}
+
+/* 自定义弹出提示框样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #ffffff;
+  padding: 20px 30px;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content h3 {
+  margin-bottom: 15px;
+  color: #ff4d4f;
+}
+
+.modal-content p {
+  margin-bottom: 20px;
+  font-size: 16px;
+  color: #333333;
+}
+
+.modal-button {
+  background-color: #409eff;
+  color: #ffffff;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.modal-button:hover {
   background-color: #66b1ff;
 }
 </style>
