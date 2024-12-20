@@ -121,9 +121,21 @@ const TableWithAction = defineComponent({
       document.body.removeChild(link)
     }
 
+    // 添加自定义弹出提示框的状态变量
+    const showCustomModal = ref(false)
+
+    // 关闭弹出提示框的方法
+    const closeModal = () => {
+      showCustomModal.value = false
+    }
+
     // 定义导航到Affinity Elements页面的函数
     const navigateToAffinityElements = () => {
-      if (selectedRows.value.length === 0) return
+      if (selectedRows.value.length === 0) {
+        // 显示自定义的弹出提示框
+        showCustomModal.value = true
+        return
+      }
 
       // 获取当前时间戳
       const timestamp = new Date().toISOString()
@@ -142,6 +154,7 @@ const TableWithAction = defineComponent({
 
     return () => (
       <div>
+        {/* 操作按钮区域 */}
         <div class={styles.actionButtons}>
           <button
             class={styles.downloadBtn}
@@ -153,12 +166,13 @@ const TableWithAction = defineComponent({
           <button
             class={styles.navigateBtn}
             onClick={navigateToAffinityElements}
-            disabled={selectedRows.value.length === 0}
+            // 移除 disabled 属性，使按钮始终可点击
           >
             Navigate to The affinity between aa-tRNAs and release factor
           </button>
         </div>
 
+        {/* 表格区域 */}
         <STableProvider locale={en}>
           <STable
             v-model:selectedRowKeys={selectedRowKeys.value}
@@ -175,6 +189,19 @@ const TableWithAction = defineComponent({
             rowKey="sequence"
           />
         </STableProvider>
+
+        {/* 自定义弹出提示框 */}
+        {showCustomModal.value && (
+          <div class={styles.modalOverlay} onClick={() => closeModal()}>
+            <div class={styles.modalContent} onClick={(e: MouseEvent) => e.stopPropagation()}>
+              <h3>Warning</h3>
+              <p>Please select at least one sequence first.</p>
+              <button class={styles.modalButton} onClick={closeModal}>
+                OK
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     )
   },

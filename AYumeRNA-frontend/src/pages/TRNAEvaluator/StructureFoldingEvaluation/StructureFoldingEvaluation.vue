@@ -7,40 +7,52 @@
       These parameters are key to understanding the structural features of the tRNA.
     </p>
 
-    <!-- User Input Form -->
+    <!-- 用户输入序列的表单 -->
     <el-card shadow="hover" class="input-card">
       <h4>Input New Sequences</h4>
       <p class="input-description">
         You can enter your own sequences for processing. You are not limited to using system-generated sequences. Please enter one sequence per line (only A, U, C, G allowed).
       </p>
-      <el-form :model="sequenceInput" :rules="sequenceRules" ref="formRef" label-width="120px" @submit.prevent="handleSubmit">
-        <el-form-item label="Enter Sequences" prop="sequences">
-          <textarea
-            v-model="sequenceInput.sequences"
-            placeholder="Enter one sequence per line (only A, U, C, G allowed)"
-            maxlength="500"
-            class="custom-textarea"
-            rows="6"
-          ></textarea>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSubmit">Submit Sequences</el-button>
-          <el-button @click="resetInput">Reset</el-button>
-        </el-form-item>
-      </el-form>
+
+      <!-- 自定义折叠框，仅折叠输入区域 -->
+      <div class="collapse-container">
+        <button class="collapse-button" @click="toggleCollapse">
+          {{ isCollapsed ? 'Expand Input' : 'Collapse Input' }}
+        </button>
+        <div v-show="!isCollapsed" class="form-container">
+          <div class="button-group">
+            <el-button type="primary" size="small" @click="loadExample">Load Example</el-button>
+          </div>
+          <el-form :model="sequenceInput" :rules="sequenceRules" ref="formRef" label-width="120px" @submit.prevent="handleSubmit">
+            <el-form-item label="Enter Sequences" prop="sequences">
+              <textarea
+                v-model="sequenceInput.sequences"
+                placeholder="Enter one sequence per line (only A, U, C, G allowed)"
+                maxlength="500"
+                class="custom-textarea"
+                rows="6"
+              ></textarea>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="handleSubmit">Submit Sequences</el-button>
+              <el-button @click="resetInput">Reset</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+      </div>
     </el-card>
 
-    <!-- Action Buttons -->
+    <!-- 多选操作按钮 -->
     <div class="action-buttons">
       <ElButton type="primary" @click="downloadSelectedSequences" :disabled="selectedRows.length === 0">
         Download Selected Sequences
       </ElButton>
-      <ElButton type="success" @click="navigateToIdentityElements" :disabled="selectedRows.length === 0">
+      <ElButton type="success" @click="handleNavigate">
         Navigate to Identity Elements
       </ElButton>
     </div>
 
-    <!-- Enhanced Styled Table -->
+    <!-- 使用自定义样式的表格展示 -->
     <s-table-provider :locale="en">
       <s-table
         :columns="columns"
@@ -84,7 +96,16 @@
       </s-table>
     </s-table-provider>
 
-    <!-- Loading and Error Messages -->
+    <!-- 自定义弹出提示框 -->
+    <div v-if="showCustomModal" class="modal-overlay" @click.self="closeModal">
+      <div class="modal-content">
+        <h3>Warning</h3>
+        <p>Please select at least one sequence first.</p>
+        <button class="modal-button" @click="closeModal">OK</button>
+      </div>
+    </div>
+
+    <!-- 加载和错误提示 -->
     <div v-if="loading" class="loading">Loading...</div>
     <div v-if="error" class="error">{{ error }}</div>
   </div>
@@ -108,17 +129,17 @@ import { useRouter } from 'vue-router'
 import type { STableRowSelection } from '@shene/table'
 import type { FormInstance, FormRules } from 'element-plus'
 
-// Initialize router
+// 初始化路由
 const router = useRouter()
 
-// Control highlight selection
+// 控制高亮选择项
 const highlightSelected = ref(true)
 
-// Store selected rows
+// 存储选中的行
 const selectedRowKeys = ref<Key[]>([])
 const selectedRows = ref<SequenceInfo[]>([])
 
-// Define rowSelection
+// 定义 rowSelection
 const rowSelection = computed<STableRowSelection<SequenceInfo>>(() => ({
   ...defaultRowSelection,
   onChange: (keys: Key[], rows: SequenceInfo[]) => {
@@ -127,15 +148,15 @@ const rowSelection = computed<STableRowSelection<SequenceInfo>>(() => ({
   }
 }))
 
-// User input sequences
+// 用户输入的序列
 const sequenceInput = ref({
-  sequences: 'GUGUCUCUAGCCGAGUUGGUAAAAGCACCACACUCUAAAUGCUGAGGAUAUGGGUUUGAAUCCCAUGAGACACA' // Example sequence
+  sequences: '' // Initially empty
 })
 
-// Form reference
+// 表单引用
 const formRef = ref<FormInstance>()
 
-// Form validation rules
+// 表单验证规则
 const sequenceRules: FormRules = {
   sequences: [
     {
@@ -157,49 +178,62 @@ const sequenceRules: FormRules = {
   ]
 }
 
-// Handle form submission
+// 自定义折叠状态
+const isCollapsed = ref(true)
+
+// 切换折叠状态
+const toggleCollapse = () => {
+  isCollapsed.value = !isCollapsed.value
+}
+
+// 加载示例序列
+const loadExample = () => {
+  sequenceInput.value.sequences = 'GUGUCUCUAGCCGAGUUGGUAAAAGCACCACACUCUAAAUGCUGAGGAUAUGGGUUUGAAUCCCAUGAGACACA'
+}
+
+// 处理表单提交
 const handleSubmit = () => {
   if (formRef.value) {
     formRef.value.validate((valid: boolean) => {
       if (valid) {
         const inputText = sequenceInput.value.sequences.trim()
-        // Split input text by lines and remove empty lines
+        // 将输入的文本按行分割，并去除空行
         const newSequencesArray = inputText
           .split('\n')
           .map(seq => seq.trim())
           .filter(seq => seq.length > 0)
 
-        // Build Sequence array with unique keys
+        // 构建 Sequence 数组，分配唯一的 key
         const timestamp = new Date().getTime().toString()
         const newSequences: Sequence[] = newSequencesArray.map((seq, index) => ({
           key: `${timestamp}_${index}`,
-          sequence: seq.toUpperCase() // Convert to uppercase
+          sequence: seq.toUpperCase() // 转换为大写
         }))
 
-        // Update sequences and timestamp
+        // 更新序列和时间戳
         updateSequences(newSequences)
 
-        // Clear input field
+        // 清空输入框
         sequenceInput.value.sequences = ''
 
-        // Provide success feedback
+        // 提供成功反馈
         ElMessage.success('The new sequences have been successfully uploaded and overwrite the previous ones.')
       }
     })
   }
 }
 
-// Reset input field
+// 重置输入框
 const resetInput = () => {
   sequenceInput.value.sequences = ''
   ElMessage.info('Input has been reset.')
 }
 
-// Define function to download selected sequences
+// 定义下载选中序列的函数
 const downloadSelectedSequences = () => {
   if (selectedRows.value.length === 0) return
 
-  // Convert selected sequences to CSV format
+  // 将选中的序列转换为 CSV 格式
   const headers = ['key', 'sequence', 'anticodon', 'infernalScore', 'tRNAStart', 'tRNAEnd', 'tRNAType']
   const csvContent = [
     headers.join(','), // Header row
@@ -208,11 +242,11 @@ const downloadSelectedSequences = () => {
     )
   ].join('\n')
 
-  // Create a Blob object
+  // 创建一个 Blob 对象
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
 
-  // Create a temporary link and trigger download
+  // 创建一个临时链接并触发下载
   const link = document.createElement('a')
   link.setAttribute('href', url)
   link.setAttribute('download', 'selected_sequences.csv')
@@ -222,11 +256,15 @@ const downloadSelectedSequences = () => {
   document.body.removeChild(link)
 }
 
-// Define function to navigate to Identity Elements page and store selected sequences
-const navigateToIdentityElements = () => {
-  if (selectedRows.value.length === 0) return
+// 定义处理导航到 Identity Elements 的函数
+const handleNavigate = () => {
+  if (selectedRows.value.length === 0) {
+    // 使用自定义的弹出提示框
+    showCustomModal.value = true
+    return
+  }
 
-  // Convert selected sequences to cache format
+  // 将选中的序列转换为缓存格式
   const cachedSequencesAfterStepOne = selectedRows.value.map(row => ({
     key: row.key,
     sequence: row.sequence,
@@ -237,23 +275,31 @@ const navigateToIdentityElements = () => {
     tRNAType: row.tRNAType,
   }))
 
-  // Get current timestamp
+  // 获取当前时间戳
   const timestamp = new Date().toISOString()
 
-  // Store timestamp in localStorage
+  // 存储时间戳到 localStorage
   localStorage.setItem('timestamp_cached_sequences_after_stepone', timestamp)
 
-  // Store selected sequences in localStorage
+  // 存储选中的序列到 localStorage
   localStorage.setItem('cached_sequences_after_stepone', JSON.stringify(cachedSequencesAfterStepOne))
 
-  // Navigate to identity-elements page
+  // 跳转到 identity-elements 页面
   router.push('/trna-evaluator/identity-elements').then(() => {
     ElMessage.success('Navigated to Identity Elements page.')
     console.log('Navigated to /trna-evaluator/identity-elements')
   })
 }
 
-// Load data on component mount
+// 自定义弹出提示框控制
+const showCustomModal = ref(false)
+
+// 关闭弹出提示框
+const closeModal = () => {
+  showCustomModal.value = false
+}
+
+// 加载数据在组件挂载时
 onMounted(() => {
   loadSequences()
 })
@@ -280,6 +326,33 @@ onMounted(() => {
   color: #606060;
   text-align: center;
   margin-bottom: 20px;
+}
+
+.collapse-container {
+  border-top: 1px solid #dcdfe6;
+  padding-top: 10px;
+}
+
+.collapse-button {
+  background-color: #409eff;
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+  margin-bottom: 10px;
+}
+
+.collapse-button:hover {
+  background-color: #66b1ff;
+}
+
+
+.button-group {
+  text-align: right;
+  margin-bottom: 10px;
 }
 
 .custom-textarea {
@@ -366,5 +439,55 @@ onMounted(() => {
 
 .loading {
   color: #409eff;
+}
+
+/* 自定义弹出提示框样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #ffffff;
+  padding: 20px 30px;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content h3 {
+  margin-bottom: 15px;
+  color: #ff4d4f;
+}
+
+.modal-content p {
+  margin-bottom: 20px;
+  font-size: 16px;
+  color: #333333;
+}
+
+.modal-button {
+  background-color: #409eff;
+  color: #ffffff;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.modal-button:hover {
+  background-color: #66b1ff;
 }
 </style>
