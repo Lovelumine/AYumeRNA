@@ -30,8 +30,8 @@ const aminoAcids = [
   'UAA',
 ]
 
-// const speciesList = ['All','Eukaryota', 'Bacteria', 'Archaea']
-const speciesList = ['All']
+const speciesList = ['All','Eukaryota', 'Bacteria', 'Archaea']
+// const speciesList = ['All']
 
 // 定义状态变量
 const aminoAcid = ref(aminoAcids[0])

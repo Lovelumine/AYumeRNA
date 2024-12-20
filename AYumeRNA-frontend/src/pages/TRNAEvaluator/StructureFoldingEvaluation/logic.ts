@@ -2,14 +2,8 @@
 
 import { ref } from 'vue'
 import axios from 'axios'
-import type { SequenceInfo } from './tableConfig'
+import type { SequenceInfo, Sequence } from './tableConfig'
 import router from '@/router/index.js'
-
-// 类型定义
-interface Sequence {
-  key: string
-  sequence: string
-}
 
 // 缓存数据的接口
 interface CachedSequenceInfo {

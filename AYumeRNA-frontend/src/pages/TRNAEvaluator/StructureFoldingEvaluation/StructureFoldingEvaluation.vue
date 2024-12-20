@@ -1,3 +1,4 @@
+<!-- src/pages/TRNAEvaluator/StructureFoldingEvaluation/StructureFoldingEvaluation.vue -->
 <template>
   <div class="structure-folding-evaluation">
     <h3 class="title">Structure Folding Evaluation</h3>
@@ -6,7 +7,30 @@
       These parameters are key to understanding the structural features of the tRNA.
     </p>
 
-    <!-- 多选操作按钮 -->
+    <!-- User Input Form -->
+    <el-card shadow="hover" class="input-card">
+      <h4>Input New Sequences</h4>
+      <p class="input-description">
+        You can enter your own sequences for processing. You are not limited to using system-generated sequences. Please enter one sequence per line (only A, U, C, G allowed).
+      </p>
+      <el-form :model="sequenceInput" :rules="sequenceRules" ref="formRef" label-width="120px" @submit.prevent="handleSubmit">
+        <el-form-item label="Enter Sequences" prop="sequences">
+          <textarea
+            v-model="sequenceInput.sequences"
+            placeholder="Enter one sequence per line (only A, U, C, G allowed)"
+            maxlength="500"
+            class="custom-textarea"
+            rows="6"
+          ></textarea>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="handleSubmit">Submit Sequences</el-button>
+          <el-button @click="resetInput">Reset</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <!-- Action Buttons -->
     <div class="action-buttons">
       <ElButton type="primary" @click="downloadSelectedSequences" :disabled="selectedRows.length === 0">
         Download Selected Sequences
@@ -16,15 +40,16 @@
       </ElButton>
     </div>
 
-    <!-- 使用 shane 表格展示 -->
+    <!-- Enhanced Styled Table -->
     <s-table-provider :locale="en">
       <s-table
         :columns="columns"
         :data-source="dataSource"
-        :max-height="300"
+        :max-height="400"
         row-key="key"
         :row-selection="rowSelection"
         :highlight-selected="highlightSelected"
+        class="styled-table"
       >
         <template #bodyCell="{ text, column, record }">
           <template v-if="column.key === 'sequence'">
@@ -34,7 +59,12 @@
             {{ record.anticodon }}
           </template>
           <template v-else-if="column.key === 'infernalScore'">
-            {{ record.infernalScore }}
+            <span v-if="typeof record.infernalScore === 'number'">
+              {{ record.infernalScore }}
+            </span>
+            <span v-else>
+              {{ record.infernalScore }}
+            </span>
           </template>
           <template v-else-if="column.key === 'tRNAStart'">
             {{ record.tRNAStart }}
@@ -54,40 +84,41 @@
       </s-table>
     </s-table-provider>
 
-    <!-- 加载和错误提示 -->
+    <!-- Loading and Error Messages -->
     <div v-if="loading" class="loading">Loading...</div>
     <div v-if="error" class="error">{{ error }}</div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { ElButton } from 'element-plus'
+import { ref, computed, onMounted } from 'vue'
+import { ElButton, ElForm, ElFormItem, ElCard, ElMessage } from 'element-plus'
 import en from '@shene/table/dist/locale/en'
 import { columns, defaultRowSelection } from './tableConfig'
-import type { Key } from './tableConfig' // Type-only import
+import type { Key, SequenceInfo, Sequence } from './tableConfig'
 import {
   dataSource,
   loading,
   error,
   loadSequences,
-  handleAnalyzeSequence
+  handleAnalyzeSequence,
+  updateSequences
 } from './logic'
 import { useRouter } from 'vue-router'
 import type { STableRowSelection } from '@shene/table'
-import type { SequenceInfo } from './tableConfig'
+import type { FormInstance, FormRules } from 'element-plus'
 
-// 初始化路由
+// Initialize router
 const router = useRouter()
 
-// 控制高亮选择项
+// Control highlight selection
 const highlightSelected = ref(true)
 
-// 存储选中的行
+// Store selected rows
 const selectedRowKeys = ref<Key[]>([])
 const selectedRows = ref<SequenceInfo[]>([])
 
-// 定义 rowSelection
+// Define rowSelection
 const rowSelection = computed<STableRowSelection<SequenceInfo>>(() => ({
   ...defaultRowSelection,
   onChange: (keys: Key[], rows: SequenceInfo[]) => {
@@ -96,11 +127,79 @@ const rowSelection = computed<STableRowSelection<SequenceInfo>>(() => ({
   }
 }))
 
-// 定义下载选中序列的函数
+// User input sequences
+const sequenceInput = ref({
+  sequences: 'GUGUCUCUAGCCGAGUUGGUAAAAGCACCACACUCUAAAUGCUGAGGAUAUGGGUUUGAAUCCCAUGAGACACA' // Example sequence
+})
+
+// Form reference
+const formRef = ref<FormInstance>()
+
+// Form validation rules
+const sequenceRules: FormRules = {
+  sequences: [
+    {
+      validator: (rule, value: string, callback: (error?: Error) => void) => {
+        if (!value.trim()) {
+          callback(new Error('Please enter at least one sequence.'))
+        } else {
+          const sequences = value.split('\n').map(seq => seq.trim()).filter(seq => seq.length > 0)
+          const invalidSequences = sequences.filter(seq => !/^[AUCGaucg]+$/.test(seq))
+          if (invalidSequences.length > 0) {
+            callback(new Error(`The following sequences are incorrect (only A, U, C, G allowed):\n${invalidSequences.join('\n')}`))
+          } else {
+            callback()
+          }
+        }
+      },
+      trigger: 'blur'
+    }
+  ]
+}
+
+// Handle form submission
+const handleSubmit = () => {
+  if (formRef.value) {
+    formRef.value.validate((valid: boolean) => {
+      if (valid) {
+        const inputText = sequenceInput.value.sequences.trim()
+        // Split input text by lines and remove empty lines
+        const newSequencesArray = inputText
+          .split('\n')
+          .map(seq => seq.trim())
+          .filter(seq => seq.length > 0)
+
+        // Build Sequence array with unique keys
+        const timestamp = new Date().getTime().toString()
+        const newSequences: Sequence[] = newSequencesArray.map((seq, index) => ({
+          key: `${timestamp}_${index}`,
+          sequence: seq.toUpperCase() // Convert to uppercase
+        }))
+
+        // Update sequences and timestamp
+        updateSequences(newSequences)
+
+        // Clear input field
+        sequenceInput.value.sequences = ''
+
+        // Provide success feedback
+        ElMessage.success('The new sequences have been successfully uploaded and overwrite the previous ones.')
+      }
+    })
+  }
+}
+
+// Reset input field
+const resetInput = () => {
+  sequenceInput.value.sequences = ''
+  ElMessage.info('Input has been reset.')
+}
+
+// Define function to download selected sequences
 const downloadSelectedSequences = () => {
   if (selectedRows.value.length === 0) return
 
-  // 将选中的序列转换为 CSV 格式
+  // Convert selected sequences to CSV format
   const headers = ['key', 'sequence', 'anticodon', 'infernalScore', 'tRNAStart', 'tRNAEnd', 'tRNAType']
   const csvContent = [
     headers.join(','), // Header row
@@ -109,11 +208,11 @@ const downloadSelectedSequences = () => {
     )
   ].join('\n')
 
-  // 创建一个 Blob 对象
+  // Create a Blob object
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
 
-  // 创建一个临时链接并触发下载
+  // Create a temporary link and trigger download
   const link = document.createElement('a')
   link.setAttribute('href', url)
   link.setAttribute('download', 'selected_sequences.csv')
@@ -123,11 +222,11 @@ const downloadSelectedSequences = () => {
   document.body.removeChild(link)
 }
 
-// 定义跳转到 Identity Elements 页面并存储选中序列的函数
+// Define function to navigate to Identity Elements page and store selected sequences
 const navigateToIdentityElements = () => {
   if (selectedRows.value.length === 0) return
 
-  // 将选中的序列转换为缓存格式
+  // Convert selected sequences to cache format
   const cachedSequencesAfterStepOne = selectedRows.value.map(row => ({
     key: row.key,
     sequence: row.sequence,
@@ -138,61 +237,134 @@ const navigateToIdentityElements = () => {
     tRNAType: row.tRNAType,
   }))
 
-  // 获取当前时间戳
+  // Get current timestamp
   const timestamp = new Date().toISOString()
 
-  // 存储时间戳到 localStorage
+  // Store timestamp in localStorage
   localStorage.setItem('timestamp_cached_sequences_after_stepone', timestamp)
 
-  // 存储选中的序列到 localStorage
+  // Store selected sequences in localStorage
   localStorage.setItem('cached_sequences_after_stepone', JSON.stringify(cachedSequencesAfterStepOne))
 
-  // 跳转到 identity-elements 页面
+  // Navigate to identity-elements page
   router.push('/trna-evaluator/identity-elements').then(() => {
+    ElMessage.success('Navigated to Identity Elements page.')
     console.log('Navigated to /trna-evaluator/identity-elements')
   })
 }
 
-// 加载数据
-loadSequences()
+// Load data on component mount
+onMounted(() => {
+  loadSequences()
+})
 </script>
 
 <style scoped>
-.title, .description {
+.title,
+.description {
   text-align: center;
+  margin-bottom: 20px;
+}
+
+.input-card {
+  max-width: 700px;
+  margin: 20px auto;
+  padding: 25px;
+  border-radius: 12px;
+  background-color: #ffffff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+.input-description {
+  font-size: 15px;
+  color: #606060;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.custom-textarea {
+  width: 100%;
+  min-height: 150px;
+  background-color: #f5f7fa;
+  border: 2px solid #dcdfe6;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 16px;
+  line-height: 1.6;
+  resize: vertical;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  outline: none;
+}
+
+.custom-textarea:focus {
+  border-color: #409eff;
+  box-shadow: 0 0 8px rgba(64, 158, 255, 0.5);
 }
 
 .action-buttons {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.loading, .error {
-  text-align: center;
-  margin-top: 20px;
-}
-
-.error {
-  color: red;
-}
-
-.loading {
-  color: #409eff;
+  gap: 15px;
+  margin-bottom: 25px;
 }
 
 .action-btn {
-  padding: 4px 8px;
+  padding: 8px 16px;
   color: #fff;
   background-color: #409eff;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
+  font-size: 15px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 .action-btn:hover {
   background-color: #66b1ff;
+  transform: translateY(-2px);
+}
+
+.styled-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 auto;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.styled-table th,
+.styled-table td {
+  padding: 14px 20px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.styled-table th {
+  background-color: #409eff;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.styled-table tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.styled-table tbody tr:hover {
+  background-color: #f1f1f1;
+}
+
+.loading,
+.error {
+  text-align: center;
+  margin-top: 25px;
+  font-size: 16px;
+}
+
+.error {
+  color: #ff4d4f;
+}
+
+.loading {
+  color: #409eff;
 }
 </style>
