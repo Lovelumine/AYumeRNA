@@ -25,9 +25,9 @@ const emits = defineEmits(['updateModel'])
 
 // Mock data
 const aminoAcids = [
-  'TCA',
-  'TTA',
-  'CTA',
+  'UAG',
+  'UGA',
+  'UAA',
 ]
 
 // const speciesList = ['All','Eukaryota', 'Bacteria', 'Archaea']
