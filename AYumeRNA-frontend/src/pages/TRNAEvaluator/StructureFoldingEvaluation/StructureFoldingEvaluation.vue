@@ -188,7 +188,7 @@ const toggleCollapse = () => {
 
 // 加载示例序列
 const loadExample = () => {
-  sequenceInput.value.sequences = 'GUGUCUCUAGCCGAGUUGGUAAAAGCACCACACUCUAAAUGCUGAGGAUAUGGGUUUGAAUCCCAUGAGACACA'
+  sequenceInput.value.sequences = 'GUGUCAGUAGCUUAGUGGUUAAAGCGUCAGACUCUAAAUCUGAAUGACGUGGGUUCGAAUCCCACCUGACACA'
 }
 
 // 处理表单提交

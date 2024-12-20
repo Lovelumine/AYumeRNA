@@ -1,11 +1,32 @@
 <template>
   <div class="welcome-container">
+
     <h1>Welcome to iSEE-tRNA</h1>
+    <img
+      src="https://minio.lumoxuan.cn/ayumerna/picture/flowchart.png"
+      alt="tRNA Structure"
+      class="tRNA-image"
+    />
     <p>
-      iSEE-tRNA is a comprehensive Web Server designed to generate and evaluate suppressor tRNA (sup-tRNA) sequences that can decode stop codons. Our integrated platform includes a Sequence Generator powered by AI, a TRNA Evaluator for thorough assessments, and Visualization Analysis tools to display the predicted structures of your tRNA sequences.
+      iSEE-tRNA is a comprehensive Web Server designed to generate and evaluate suppressor tRNA (sup-tRNA) sequences that can decode stop codons. Our integrated platform includes a Sequence Generator powered by AI, a tRNA Evaluator for thorough assessments, and Visualization Analysis tools to display the predicted structures of your tRNA sequences.
     </p>
+
     <p class="highlight">
-      This website is free and open to all users and there is no login requirement.
+      This website is free and open to all users, including commercial users, and there is no login requirement.
+    </p>
+    <p class="script-link">
+      To help you access our web services programmatically, we provide a
+      <a
+        href="https://minio.lumoxuan.cn/ayumerna/sample/scripts.py"
+        target="_blank"
+        class="download-link"
+      >
+        Python script template
+      </a>
+      that demonstrates how to interact with our APIs.
+    </p>
+    <p>
+      This script is customizable and ready to use, allowing users to generate and evaluate tRNA sequences programmatically.
     </p>
     <button class="start-button" @click="navigateToCodonGenerator">
       Get Started
@@ -29,7 +50,6 @@ const navigateToCodonGenerator = () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
   padding: 20px;
   text-align: center;
   background-color: #f0f8ff; /* 浅色背景 */
@@ -68,5 +88,13 @@ p {
 
 .start-button:hover {
   background-color: #218838; /* 深绿色悬停效果 */
+}
+
+/* 图片环绕样式 */
+.tRNA-image {
+  max-width: 80%; /* 限制图片宽度 */
+  height: auto;
+  margin: 15px 20px 15px 0;
+  float: left; /* 图片向左浮动，文字环绕在右边 */
 }
 </style>
