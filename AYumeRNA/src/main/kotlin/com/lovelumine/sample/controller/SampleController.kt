@@ -40,6 +40,21 @@ class SampleController(
     // 文件路径映射
     private val filePaths = mapOf(
         "Phenylalanine_Bacteria.pt" to "https://minio.lumoxuan.cn/ayumerna/model/Bacteria_Phenylalanine_model_epoch76.pt",
+        "CTA_All.pt" to "https://minio.lumoxuan.cn/ayumerna/model/CTA_model_epoch19.pt",
+        "TCA_All.pt" to "https://minio.lumoxuan.cn/ayumerna/model/TCA_model_epoch57.pt",
+        "TTA_All.pt" to "https://minio.lumoxuan.cn/ayumerna/model/TTA_model_epoch50.pt",
+        "UAG_All.pt" to "https://minio.lumoxuan.cn/ayumerna/model/CTA_model_epoch19.pt",
+        "UGA_All.pt" to "https://minio.lumoxuan.cn/ayumerna/model/TCA_model_epoch57.pt",
+        "UAA_All.pt" to "https://minio.lumoxuan.cn/ayumerna/model/TTA_model_epoch50.pt",
+        "UAG_Eukaryota.pt" to "https://minio.lumoxuan.cn/ayumerna/model/CTA_model_epoch19.pt",
+        "UGA_Eukaryota.pt" to "https://minio.lumoxuan.cn/ayumerna/model/TCA_model_epoch57.pt",
+        "UAA_Eukaryota.pt" to "https://minio.lumoxuan.cn/ayumerna/model/TTA_model_epoch50.pt",
+        "UAG_Bacteria.pt" to "https://minio.lumoxuan.cn/ayumerna/model/CTA_model_epoch19.pt",
+        "UGA_Bacteria.pt" to "https://minio.lumoxuan.cn/ayumerna/model/TCA_model_epoch57.pt",
+        "UAA_Bacteria.pt" to "https://minio.lumoxuan.cn/ayumerna/model/TTA_model_epoch50.pt",
+        "UAG_Archaea.pt" to "https://minio.lumoxuan.cn/ayumerna/model/CTA_model_epoch19.pt",
+        "UGA_Archaea.pt" to "https://minio.lumoxuan.cn/ayumerna/model/TCA_model_epoch57.pt",
+        "UAA_Archaea.pt" to "https://minio.lumoxuan.cn/ayumerna/model/TTA_model_epoch50.pt",
         "1-20241030211218-model.cm" to "https://minio.lumoxuan.cn/ayumerna/sample/1-20241030211218-model.cm",
         "config.yaml" to "https://minio.lumoxuan.cn/ayumerna/sample/1-20241030214357-config.yaml"
     )

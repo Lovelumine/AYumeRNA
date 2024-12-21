@@ -17,7 +17,16 @@ class SequenceController(
 
     private val filePaths = mapOf(
         "CUA" to "https://minio.lumoxuan.cn/ayumerna/model/CTA.csv",
-        "UUA" to "https://minio.lumoxuan.cn/ayumerna/model/TTA.csv"
+        "UUA" to "https://minio.lumoxuan.cn/ayumerna/model/TTA.csv",
+        "Ala" to "https://minio.lumoxuan.cn/ayumerna/model/Ala.csv",
+        "Arg" to "https://minio.lumoxuan.cn/ayumerna/model/Arg.csv",
+        "Asn" to "https://minio.lumoxuan.cn/ayumerna/model/Asn.csv",
+        "Asp" to "https://minio.lumoxuan.cn/ayumerna/model/Asp.csv",
+        "Cys" to "https://minio.lumoxuan.cn/ayumerna/model/Cys.csv",
+        "Gly" to "https://minio.lumoxuan.cn/ayumerna/model/Gly.csv",
+        "His" to "https://minio.lumoxuan.cn/ayumerna/model/His.csv",
+        "Trp" to "https://minio.lumoxuan.cn/ayumerna/model/Trp.csv",
+        "Val" to "https://minio.lumoxuan.cn/ayumerna/model/Val.csv",
     )
 
     private val httpClient = OkHttpClient()
