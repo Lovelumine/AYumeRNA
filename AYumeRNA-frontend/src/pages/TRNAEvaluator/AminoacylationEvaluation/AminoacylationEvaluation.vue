@@ -116,10 +116,10 @@ async function loadSequences() {
         seq.totalFreeEnergy = isNaN(parsedFreeEnergy) ? 0 : calculateTotalEnergy(parsedFreeEnergy)
       } catch (e) {
         console.error(`[ERROR] Failed to process sequence: ${seq.sequence}`, e)
-        seq.tstemSequence = 'Error'
-        seq.tstemPosition = 'Error'
+        seq.tstemSequence = 'The sequence quality is too poor to generate results.'
+        seq.tstemPosition = 'The sequence quality is too poor to generate results.'
         seq.basePairs = []
-        seq.freeEnergy = 'Error'
+        seq.freeEnergy = 'The sequence quality is too poor to generate results.'
         seq.totalFreeEnergy = 0 // 出错时设置为0或其他默认值
       }
     }

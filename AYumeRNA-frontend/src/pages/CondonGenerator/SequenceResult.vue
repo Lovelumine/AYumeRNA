@@ -193,7 +193,7 @@ function goToAnalysis() {
   console.log('Saving all sequences before navigation:', sequences.value)
   saveSequencesToLocalStorage()
   console.log('Navigating to analysis page')
-  router.push({ name: 'tRNAEvaluator' })
+  router.push({ name: 'tRNA Evaluator' })
 }
 </script>
 

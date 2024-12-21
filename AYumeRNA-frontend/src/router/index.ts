@@ -19,18 +19,18 @@ const routes = [
   { path: '/CodonGenerator', name: 'Sequence Generator', component: CodonGenerator },
   {
     path: '/trna-evaluator',
-    name: 'tRNAEvaluator',
+    name: 'tRNA Evaluator',
     component: TRNAEvaluator,
     children: [
 
       {
         path: 'structure-folding',
-        name: 'StructureFolding Evaluation',
+        name: 'Structure Folding Evaluation',
         component: StructureFoldingEvaluation,
       },
       {
         path: 'identity-elements',
-        name: 'IdentityElements Evaluation',
+        name: 'Identity Elements Evaluation',
         component: IdentityElementsEvaluation,
       },
       {
@@ -47,17 +47,17 @@ const routes = [
   // },
   {
     path: '/visualization',
-    name: 'VisualizationAnalysis',
+    name: 'Visualization Analysis',
     component: VisualizationAnalysis,
     children: [
       {
         path: 'secondary-structure',
-        name: 'SecondaryStructure',
+        name: 'Secondary Structure',
         component: SecondaryStructure,
       },
       {
         path: 'tertiary-structure',
-        name: 'TertiaryStructure',
+        name: 'Tertiary Structure',
         component: TertiaryStructure,
       },
     ],
