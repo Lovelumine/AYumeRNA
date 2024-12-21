@@ -61,7 +61,7 @@ const TableWithAction = defineComponent({
         resizable: true,
         customRender: ({ record }: { record: TableRow }) => {
           const { trexScore } = record
-          return trexScore === null ? 'Not Calculated' : trexScore.toFixed(2)
+          return trexScore === null ? 'Please select Amino Acid' : trexScore.toFixed(2)
         },
         sorter: (a: TableRow, b: TableRow) =>
           (a.trexScore || 0) - (b.trexScore || 0),

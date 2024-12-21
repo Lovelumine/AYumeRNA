@@ -26,6 +26,7 @@
     "bootstrap": "^5.3.3",
     "element-plus": "^2.8.7",
     "global": "^4.4.0",
+    "jzip": "^1.0.0",
     "mathjax": "^3.2.2",
     "mathjax-full": "^3.2.2",
     "pinia": "^2.2.4",

@@ -1,6 +1,7 @@
+<!-- src/pages/CondonGenerator/CodonInput.vue -->
 <template>
   <div class="codon-input">
-    <label for="amino-acid">Select Amino Acid:</label>
+    <label for="amino-acid">Select Codon:</label>
     <select v-model="aminoAcid" id="amino-acid" class="dropdown">
       <option v-for="acid in aminoAcids" :key="acid" :value="acid">
         {{ acid }}
@@ -24,33 +25,24 @@ const emits = defineEmits(['updateModel'])
 
 // Mock data
 const aminoAcids = [
-  'Alanine',
-  'Arginine',
-  'Asparagine',
-  'Aspartic acid',
-  'Cysteine',
-  'Glutamine',
-  'Glutamic acid',
-  'Glycine',
-  'Histidine',
-  'Isoleucine',
-  'Leucine',
-  'Lysine',
-  'Methionine',
-  'Phenylalanine',
-  'Proline',
-  'Serine',
-  'Threonine',
-  'Tryptophan',
-  'Tyrosine',
-  'Valine',
+  'UAG',
+  'UGA',
+  'UAA',
 ]
 
-const speciesList = ['Eukaryota', 'Bacteria', 'Archaea']
+const speciesList = ['All','Eukaryota', 'Bacteria', 'Archaea']
+// const speciesList = ['All']
 
 // 定义状态变量
 const aminoAcid = ref(aminoAcids[0])
 const species = ref(speciesList[0])
+
+// 计算属性，生成模型名称
+const modelName = computed(() => {
+  const model = `${aminoAcid.value}_${species.value}.pt`
+  console.log('[computed] modelName updated to:', model)
+  return model
+})
 
 // 在组件加载时读取本地存储的数据
 onMounted(() => {
@@ -101,13 +93,9 @@ onMounted(() => {
   } else {
     console.log('[onMounted] No stored parameters found in localStorage.')
   }
-})
 
-// 计算属性，生成模型名称
-const modelName = computed(() => {
-  const model = `${aminoAcid.value}_${species.value}.pt`
-  console.log('[computed] modelName updated to:', model)
-  return model
+  // 触发一次 updateModel 事件，确保父组件接收到初始的 modelName
+  emits('updateModel', modelName.value)
 })
 
 // 监听 aminoAcid 和 species 的变化，保存到 localStorage，并触发事件

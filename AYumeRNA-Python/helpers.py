@@ -11,9 +11,9 @@ import datetime
 app = Flask(__name__)
 
 # MinIO 配置
-MINIO_URL = 'https://minio.lumoxuan.cn'
-MINIO_ACCESS_KEY = 'uv9Ey4hCgAeF9US8IvW7'
-MINIO_SECRET_KEY = 'EJxNuc7hJId6cW969JXcMtd14xs7d9wTmC17Mn5W'
+MINIO_URL = 'http://127.0.0.1:9000'
+MINIO_ACCESS_KEY = 'T8SpMccAeesfEAywYheh'
+MINIO_SECRET_KEY = '3stAYV2Y0wkRBvQjtyDx7VaIRWFjCp47rO3om9Of'
 MINIO_BUCKET_NAME = 'ayumerna'
 
 # 初始化 MinIO 客户端
@@ -116,7 +116,7 @@ def upload_to_minio(local_file_path, user_id, file_type='model', progress_messag
             content_type='application/octet-stream'
         )
 
-        minio_url = f"{MINIO_URL}/{MINIO_BUCKET_NAME}/{object_name}"
+        minio_url = f"https://minio.lumoxuan.cn/{MINIO_BUCKET_NAME}/{object_name}"
         progress_messages.append(f"Uploaded file to MinIO: {minio_url}")
         return minio_url
 

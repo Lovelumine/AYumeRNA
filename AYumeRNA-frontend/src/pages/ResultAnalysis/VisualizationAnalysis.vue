@@ -24,6 +24,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 
+import { useRouter, useRoute } from 'vue-router'
+
+const router = useRouter()
+const route = useRoute()
+
+
 // Define tRNASequence as a reactive reference
 const tRNASequence = ref('')
 
@@ -42,6 +48,12 @@ onMounted(() => {
     tRNASequence.value = 'No analyzed sequence found in local storage'
   }
 })
+
+  // 自动跳转到 /visualization/secondary-structure 子页面
+  if (route.path === '/visualization') {
+    router.push('/visualization/secondary-structure')
+  }
+
 </script>
 
 <style scoped>

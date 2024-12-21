@@ -1,13 +1,13 @@
 <template>
   <aside :class="['sidebar', { collapsed: props.isCollapsed }, 'd-flex flex-column']">
     <div class="header d-flex justify-content-between align-items-center">
-      <h1 v-if="!props.isCollapsed" class="title">AYumeRNA</h1>
+      <h1 v-if="!props.isCollapsed" class="title">iSEE-tRNA</h1>
       <button class="toggle-btn btn btn-link d-flex align-items-center" @click="toggleSidebar">
         <font-awesome-icon :icon="props.isCollapsed ? 'bars' : 'times'" class="icon me-2" />
         <span v-if="!props.isCollapsed"></span> <!-- 文字和图标分开对齐 -->
       </button>
     </div>
-    <p v-if="!props.isCollapsed" class="description">Generate the tRNA sequences you need</p>
+    <p v-if="!props.isCollapsed" class="description">An Integrated Web Server for Generating, Evaluating, and Visualizing Engineered sup-tRNA</p>
     <nav v-if="!props.isCollapsed">
       <ul class="nav flex-column">
         <li v-for="route in filteredRoutes" :key="route.path" class="nav-item">
@@ -92,6 +92,7 @@ const filteredRoutes = computed(() =>
 .title {
   font-size: 1.2em;
   font-weight: bold;
+  color: #ffffff;
 }
 
 .toggle-btn {

@@ -6,6 +6,11 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+*.ps
+*.txt
+*.fa
+*.fasta
+*.sto
 
 node_modules
 .DS_Store
@@ -28,3 +33,5 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+
+rscape

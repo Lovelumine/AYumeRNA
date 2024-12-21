@@ -1,154 +1,142 @@
-<!-- src/pages/TReXScore/TRNACompatibilityEvaluator.vue -->
+<!-- src/pages/TRNAEvaluator/IdentityElementsEvaluation/IdentityElementsEvaluation.vue -->
+
 <template>
   <div class="site--main">
-    <h2 class="title">tRNACompatibility Evaluator</h2>
-    <p class="description">
-      Welcome to the <strong>tRNACompatibility Evaluator</strong>. In the first step, we used AI to generate novel sup-tRNA sequences. Now, we will evaluate these sequences to determine whether they can carry specific amino acids and read through stop codons.
-    </p>
-
     <div class="info-box">
-  <h3>Overview</h3>
-  <p>
-    In the first step, sup-tRNA sequences with special suppressor capabilities were generated using AI. Now, in this second phase, we apply the tREX Score algorithm to evaluate these tRNAs and determine if they can carry specific amino acids and read through stop codons.
-  </p>
+      <h3>Evaluating tRNA Identity Elements with tREX Score</h3>
 
-  <details class="details-box">
-    <summary class="details-summary">
-      Show More About the First Step
-    </summary>
-    <div class="details-content">
-      <h4>Step 1: Generating sup-tRNA Sequences</h4>
       <p>
-        In the first step, computational models and reference datasets were used to generate new sup-tRNA sequences with potential stop codon suppression capabilities. At this stage, the specific amino acids they carry were not yet determined. These sequences serve as candidates for further evaluation in this phase.
+        To assess the identity elements of generated sup-tRNA sequences, we use the <strong>tREX Score</strong> algorithm. This scoring method compares candidate tRNAs against consensus templates derived from validated reference tRNA datasets to identify conserved positions critical for amino acid binding and identity recognition.
       </p>
+
+      <p>
+        A <strong>positive tREX Score</strong> indicates that the generated tRNA likely possesses the correct identity elements to carry a specific amino acid and function as a suppressor tRNA (sup-tRNA). These tRNAs are capable of decoding stop codons and participating in protein synthesis with the desired amino acid specificity.
+      </p>
+
+      <details class="details-box">
+        <summary class="details-summary">
+          Show More About the Evaluation Process
+        </summary>
+        <p>
+          Identity elements are critical sequence and structural features in tRNAs that determine their recognition by aminoacyl-tRNA synthetases (aaRSs) and their ability to carry specific amino acids. Proper identification of these elements is essential to evaluate whether a generated sup-tRNA sequence can function correctly in translation, including the suppression of stop codons.
+        </p>
+
+        <p>The reference datasets for scoring identity elements are as follows:</p>
+        <ul>
+          <li>
+            Ala (Alanine):
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/Ala.csv"
+              target="_blank"
+              >Ala.csv</a
+            >
+          </li>
+          <li>
+            Arg (Arginine):
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/Arg.csv"
+              target="_blank"
+              >Arg.csv</a
+            >
+          </li>
+          <li>
+            Asn (Asparagine):
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/Asn.csv"
+              target="_blank"
+              >Asn.csv</a
+            >
+          </li>
+          <li>
+            Asp (Aspartic Acid):
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/Asp.csv"
+              target="_blank"
+              >Asp.csv</a
+            >
+          </li>
+          <li>
+            Cys (Cysteine):
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/Cys.csv"
+              target="_blank"
+              >Cys.csv</a
+            >
+          </li>
+          <li>
+            Gly (Glycine):
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/Gly.csv"
+              target="_blank"
+              >Gly.csv</a
+            >
+          </li>
+          <li>
+            His (Histidine):
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/His.csv"
+              target="_blank"
+              >His.csv</a
+            >
+          </li>
+          <li>
+            Trp (Tryptophan):
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/Trp.csv"
+              target="_blank"
+              >Trp.csv</a
+            >
+          </li>
+          <li>
+            Val (Valine):
+            <a
+              href="https://minio.lumoxuan.cn/ayumerna/model/Val.csv"
+              target="_blank"
+              >Val.csv</a
+            >
+          </li>
+        </ul>
+
+        <p>
+          These files contain consensus tRNA sequences used to align and identify conserved nucleotide positions contributing to tRNA identity.
+        </p>
+
+        <p>
+          After performing a multiple sequence alignment (MSA) on the templates, the following scoring formulas are applied:
+        </p>
+
+        <img
+          src="https://minio.lumoxuan.cn/ayumerna/picture/formula_1.png"
+          alt="Formula 1"
+          class="formula-image-1"
+        />
+
+        <p>
+          For each test tRNA sequence, conserved positions <math>i ∈ C</math> are scored as follows:
+        </p>
+        <img
+          src="https://minio.lumoxuan.cn/ayumerna/picture/formula_2.png"
+          alt="Formula 2"
+          class="formula-image-2"
+        />
+
+        <p>
+          Finally, the cumulative tREX Score is computed as:
+        </p>
+        <img
+          src="https://minio.lumoxuan.cn/ayumerna/picture/formula_3.png"
+          alt="Formula 3"
+          class="formula-image-3"
+        />
+      </details>
     </div>
-  </details>
-</div>
 
-<div class="info-box">
-  <h3>Step 2: Evaluating tRNAs with tREX Score</h3>
-  <p>
-    To determine whether the generated sup-tRNA sequences can carry specific amino acids and suppress stop codons, we use the tREX Score algorithm. This process aligns candidate tRNAs against consensus templates derived from reference tRNA datasets.
-  </p>
-  <details class="details-box">
-    <summary class="details-summary">
-      Show More About the Second Step
-    </summary>
-    <p>The reference datasets for scoring are:</p>
-    <ul>
-      <li>
-        Ala (Alanine):
-        <a
-          href="https://minio.lumoxuan.cn/ayumerna/model/Ala.csv"
-          target="_blank"
-          >Ala.csv</a
-        >
-      </li>
-      <li>
-        Arg (Arginine):
-        <a
-          href="https://minio.lumoxuan.cn/ayumerna/model/Arg.csv"
-          target="_blank"
-          >Arg.csv</a
-        >
-      </li>
-      <li>
-        Asn (Asparagine):
-        <a
-          href="https://minio.lumoxuan.cn/ayumerna/model/Asn.csv"
-          target="_blank"
-          >Asn.csv</a
-        >
-      </li>
-      <li>
-        Asp (Aspartic Acid):
-        <a
-          href="https://minio.lumoxuan.cn/ayumerna/model/Asp.csv"
-          target="_blank"
-          >Asp.csv</a
-        >
-      </li>
-      <li>
-        Cys (Cysteine):
-        <a
-          href="https://minio.lumoxuan.cn/ayumerna/model/Cys.csv"
-          target="_blank"
-          >Cys.csv</a
-        >
-      </li>
-      <li>
-        Gly (Glycine):
-        <a
-          href="https://minio.lumoxuan.cn/ayumerna/model/Gly.csv"
-          target="_blank"
-          >Gly.csv</a
-        >
-      </li>
-      <li>
-        His (Histidine):
-        <a
-          href="https://minio.lumoxuan.cn/ayumerna/model/His.csv"
-          target="_blank"
-          >His.csv</a
-        >
-      </li>
-      <li>
-        Trp (Tryptophan):
-        <a
-          href="https://minio.lumoxuan.cn/ayumerna/model/Trp.csv"
-          target="_blank"
-          >Trp.csv</a
-        >
-      </li>
-      <li>
-        Val (Valine):
-        <a
-          href="https://minio.lumoxuan.cn/ayumerna/model/Val.csv"
-          target="_blank"
-          >Val.csv</a
-        >
-      </li>
-    </ul>
-    <p>
-      These files contain template tRNA sequences used to generate a consensus template and identify conserved positions.
-    </p>
-
-    <p>
-      After performing a multiple sequence alignment (MSA) on the templates, we define:
-    </p>
-    <img
-      src="https://minio.lumoxuan.cn/ayumerna/picture/formula_1.png"
-      alt="Formula 1"
-      class="formula-image-1"
-    />
-
-    <p>
-      For each test sequence, after aligning it to the consensus sequence, each conserved position <math>i ∈ C</math> is scored as follows:
-    </p>
-    <img
-      src="https://minio.lumoxuan.cn/ayumerna/picture/formula_2.png"
-      alt="Formula 2"
-      class="formula-image-2"
-    />
-
-    <p>Finally, the tREX Score is computed as:</p>
-    <img
-      src="https://minio.lumoxuan.cn/ayumerna/picture/formula_3.png"
-      alt="Formula 3"
-      class="formula-image-3"
-    />
-  </details>
-  <p>
-    A positive tREX Score indicates that the tRNA may carry a specific amino acid and possess suppressor properties, making it a true sup-tRNA capable of decoding stop codons.
-  </p>
-</div>
-
-<div class="parameters-container">
+    <div class="parameters-container">
       <h3>Generation Parameters</h3>
-      <p><strong>Anticodon:</strong> {{ aminoAcid }}</p>
+      <p><strong>Codon:</strong> {{ aminoAcid }}</p>
       <p><strong>Domain:</strong> {{ domain }}</p>
 
-      <label for="reverse-codon">Select Reverse Codon:</label>
+      <label for="reverse-codon">Select Amino Acid:</label>
       <select
         id="reverse-codon"
         v-model="selectedReverseCodon"
@@ -166,7 +154,7 @@
     </div>
 
     <p v-if="taskSubmitted" class="task-status">
-      Task has been submitted. Waiting for results...
+      <!-- Task has been submitted. Waiting for results... -->
     </p>
 
     <div v-if="wsMessages.length" class="message-container">
@@ -184,8 +172,16 @@
 
     <TableWithAction
       :data-source="sequences"
-      @download-selected="downloadSelectedResults"
     />
+
+    <!-- 自定义弹出提示框 -->
+    <div v-if="showCustomModal" class="modal-overlay" @click.self="closeModal">
+      <div class="modal-content">
+        <h3>Warning</h3>
+        <p>Please select at least one sequence first.</p>
+        <button class="modal-button" @click="closeModal">OK</button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -224,29 +220,8 @@ const selectedReverseCodon = ref<string>(reverseCodonOptions[0])
 const wsUrl = '/sockjs/ws'
 const subscribeUrl = '/topic/progress/1'
 
-// 下载选中的结果
-function downloadSelectedResults(selectedRows: Sequence[]) {
-  if (!selectedRows.length) {
-    alert('No rows selected to download.')
-    return
-  }
-  console.log('Downloading selected rows:', selectedRows)
-  const content = selectedRows
-    .map(
-      row =>
-        `Sequence: ${row.sequence}, tREX Score: ${row.trexScore ?? 'Please select Amino Acid'}`,
-    )
-    .join('\n')
-  const blob = new Blob([content], { type: 'text/plain' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = 'selected_results.txt'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
-}
+// 移除 downloadSelectedResults 函数，因为下载在子组件中处理
+// 如果该函数在其他地方使用，请保留
 
 // 下载全部结果
 function downloadResult() {
@@ -261,6 +236,14 @@ function downloadResult() {
 }
 
 let clientInstance: Client | null = null
+
+// 添加自定义弹出提示框的状态变量
+const showCustomModal = ref(false)
+
+// 关闭弹出提示框的方法
+const closeModal = () => {
+  showCustomModal.value = false
+}
 
 // 连接 WebSocket
 function connectWebSocket() {
@@ -423,6 +406,9 @@ onMounted(() => {
     selectedReverseCodon.value = reverseCodonOptions[0]
   }
 
+  // 调用 onReverseCodonChange 以使用默认选项加载数据
+  onReverseCodonChange()
+
   const hasDefault = loadDefaultSequences(sequences)
   if (!hasDefault) {
     console.log('No sequences found, do nothing.')
@@ -489,7 +475,8 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
+<style>
+/* 你的样式内容 */
 .site--main {
   padding: 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -637,5 +624,68 @@ onMounted(() => {
   height: auto;
   max-width: 30%; /* 根据图片原比例缩放 */
   width: auto;
+}
+
+.action-btn {
+  padding: 4px 8px;
+  color: #fff;
+  background-color: #409eff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.action-btn:hover {
+  background-color: #66b1ff;
+}
+
+/* 自定义弹出提示框样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #ffffff;
+  padding: 20px 30px;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content h3 {
+  margin-bottom: 15px;
+  color: #ff4d4f;
+}
+
+.modal-content p {
+  margin-bottom: 20px;
+  font-size: 16px;
+  color: #333333;
+}
+
+.modal-button {
+  background-color: #409eff;
+  color: #ffffff;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.modal-button:hover {
+  background-color: #66b1ff;
 }
 </style>

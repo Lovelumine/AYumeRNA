@@ -67,9 +67,9 @@ function toggleSidebar() {
 }
 
 @media (max-width: 768px) {
-  #sidebar {
+  /* #sidebar {
     width: 80px; /* 窄侧边栏宽度 */
-  }
+
 
   #main-content {
     margin-left: 80px; /* 内容区域相应调整 */

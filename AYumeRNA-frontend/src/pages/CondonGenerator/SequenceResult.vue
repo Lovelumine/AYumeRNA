@@ -31,7 +31,7 @@
       The sequences are ready for analysis.
     </p>
     <button v-if="sequences.length" class="analysis-btn" @click="goToAnalysis">
-      Next Step: Analysis
+      Next Step: Evaluator
     </button>
   </div>
 </template>
@@ -193,7 +193,7 @@ function goToAnalysis() {
   console.log('Saving all sequences before navigation:', sequences.value)
   saveSequencesToLocalStorage()
   console.log('Navigating to analysis page')
-  router.push({ name: 'tRNACompatibility Evaluator' })
+  router.push({ name: 'tRNA Evaluator' })
 }
 </script>
 

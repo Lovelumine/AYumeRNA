@@ -5,6 +5,10 @@ from routes.generate_weight import generate_weight_bp
 from routes.train import train_bp
 from routes.sample import sample_bp
 from routes.r2dt import r2dt_bp  # 导入新的 R2DT 蓝图
+from routes.scape import scape_bp
+from routes.charge import charge_bp
+from routes.transcan_se import transcan_se_bp 
+
 
 app = Flask(__name__)
 
@@ -15,6 +19,10 @@ app.register_blueprint(split_onehot_bp)
 app.register_blueprint(train_bp)
 app.register_blueprint(sample_bp)
 app.register_blueprint(r2dt_bp)  # 注册新的 R2DT 蓝图
+app.register_blueprint(scape_bp)
+app.register_blueprint(charge_bp)
+app.register_blueprint(transcan_se_bp) 
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=2002)

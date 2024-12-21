@@ -70,8 +70,11 @@ def handle_sample():
         # 上传 Fasta 文件到 MinIO
         output_url = upload_to_minio(sampled_fasta_path, user_id, file_type='fasta', progress_messages=progress_messages)
 
+        # 替换返回的 URL
+        adjusted_url = output_url.replace("http://127.0.0.1:9000", "https://minio.lumoxuan.cn")
+
         # 返回结果
-        return jsonify({"output_file": output_url, "progress_messages": progress_messages})
+        return jsonify({"output_file": adjusted_url, "progress_messages": progress_messages})
 
     except Exception as e:
         print(f"Error in handle_sample: {str(e)}")
