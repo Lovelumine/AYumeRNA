@@ -34,18 +34,21 @@ function toggleSidebar() {
 watch(route, (newRoute, oldRoute) => {
   console.log(`Route changed from ${String(oldRoute.name)} to ${String(newRoute.name)}`);
 
-  // 检查是否已经刷新过
-  const hasReloaded = localStorage.getItem('hasReloaded');
+  // 仅在导航到 /CodonGenerator 时触发刷新
+  if (newRoute.path === '/CodonGenerator') {
+    // 检查是否已经刷新过
+    const hasRefreshed = localStorage.getItem('codonGeneratorRefreshed');
 
-  if (!hasReloaded) {
-    // 设置标记表示已刷新
-    localStorage.setItem('hasReloaded', 'true');
-    console.log('Refreshing the page...');
-    window.location.reload();
-  } else {
-    // 清除标记，允许下一次刷新
-    localStorage.removeItem('hasReloaded');
-    console.log('Page has already been refreshed once.');
+    if (!hasRefreshed) {
+      // 设置标记表示已刷新
+      localStorage.setItem('codonGeneratorRefreshed', 'true');
+      console.log('Refreshing the page for /CodonGenerator...');
+      window.location.reload();
+    } else {
+      // 清除标记，允许下一次刷新
+      localStorage.removeItem('codonGeneratorRefreshed');
+      console.log('/CodonGenerator has already been refreshed once.');
+    }
   }
 });
 </script>
