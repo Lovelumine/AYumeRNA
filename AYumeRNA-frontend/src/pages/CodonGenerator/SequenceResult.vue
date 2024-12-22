@@ -1,5 +1,5 @@
 <template>
-  <div class="sequence-result">
+  <div class="sequence-result" >
     <h3>Sampling Task Status</h3>
 
     <!-- 显示任务状态消息 -->

@@ -1,4 +1,4 @@
-<!-- src/pages/CondonGenerator/CondonGenerator.vue -->
+<!-- src/pages/CodonGenerator/CodonGenerator.vue -->
 <template>
   <div class="generator">
     <h2>

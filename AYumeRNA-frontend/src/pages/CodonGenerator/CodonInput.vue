@@ -1,6 +1,6 @@
 <!-- src/pages/CondonGenerator/CodonInput.vue -->
 <template>
-  <div class="codon-input">
+  <div class="codon-input" >
     <label for="amino-acid">Select Codon:</label>
     <select v-model="aminoAcid" id="amino-acid" class="dropdown">
       <option v-for="acid in aminoAcids" :key="acid" :value="acid">

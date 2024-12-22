@@ -1,6 +1,10 @@
+// src/router/index.ts
 import { createRouter, createWebHistory } from 'vue-router'
+import type { RouteRecordRaw } from 'vue-router' // 使用类型导入
+
+// 导入所有必要的组件
 import Home from '../pages/HomePage/HomePage.vue'
-import CodonGenerator from '../pages/CondonGenerator/CondonGenerator.vue'
+import CodonGenerator from '../pages/CodonGenerator/CodonGenerator.vue' // 修正路径
 // import TReXScore from '../pages/TReXScore/TReXScore.vue'
 import VisualizationAnalysis from '../pages/ResultAnalysis/VisualizationAnalysis.vue'
 import SecondaryStructure from '../pages/ResultAnalysis/SecondaryStructure/SecondaryStructure.vue'
@@ -13,8 +17,7 @@ import IdentityElementsEvaluation from '../pages/TRNAEvaluator/IdentityElementsE
 import AboutPage from '../pages/AboutPage/AboutPage.vue'
 import HelpPage from '../pages/HelpPage/HelpPage.vue'
 
-const routes = [
-
+const routes: Array<RouteRecordRaw> = [
   { path: '/', name: 'Home', component: Home },
   { path: '/CodonGenerator', name: 'Sequence Generator', component: CodonGenerator },
   {
@@ -22,7 +25,6 @@ const routes = [
     name: 'tRNA Evaluator',
     component: TRNAEvaluator,
     children: [
-
       {
         path: 'structure-folding',
         name: 'Structure Folding Evaluation',
@@ -78,6 +80,10 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  scrollBehavior(_to, _from, _savedPosition) { // 使用下划线前缀表示未使用的参数
+    return { top: 0 } // 每次路由切换后滚动到顶部
+  },
 })
 
 export default router
