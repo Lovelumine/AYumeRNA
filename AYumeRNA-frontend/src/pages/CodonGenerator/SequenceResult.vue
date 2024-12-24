@@ -1,19 +1,26 @@
 <template>
-  <div class="sequence-result" >
+  <div class="sequence-result">
     <h3>Sampling Task Status</h3>
-
-    <!-- 显示任务状态消息 -->
     <p v-if="statusMessage">{{ statusMessage }}</p>
 
-    <!-- 最终结果展示 -->
+    <!-- 这里也有进度条，但可以留空或只做调试用途 -->
+    <el-progress
+      v-if="progressValue !== null && !resultUrl"
+      :text-inside="true"
+      :stroke-width="20"
+      :percentage="progressValue"
+      status="active"
+      color="#4caf50"
+      style="margin: 1em auto; width: 50%;"
+    />
+
     <p v-if="resultUrl">
-      Sampling task completed! The result is available.
+      Sampling task completed!
       <a :href="resultUrl" target="_blank" @click="downloadAndParseFile">
         Click to download the result
       </a>
     </p>
 
-    <!-- 显示本地存储的序列数据 -->
     <el-table v-if="sequences.length" :data="sequences" style="width: 100%">
       <el-table-column prop="index" label="Index" width="80">
         <template #default="scope">
@@ -42,13 +49,24 @@ import { useRouter } from 'vue-router'
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 
+/**
+ * 定义要 emit 的事件
+ * "progress-updated" => 父组件更新进度
+ * "task-completed"   => 父组件进度直接到 100
+ */
+const emits = defineEmits<{
+  (e: 'progress-updated', value: number): void
+  (e: 'task-completed'): void
+}>()
+
 type Sequence = {
   index: number
   sequence: string
 }
 
-const statusMessage = ref<string>('')
-const progress = ref<string>('')
+const statusMessage = ref('')
+const progress = ref('')
+const progressValue = ref<number|null>(null)
 const resultUrl = ref<string>('')
 const sequences = ref<Sequence[]>([])
 const router = useRouter()
@@ -56,7 +74,6 @@ const router = useRouter()
 const subscribeUrl = '/topic/progress/1'
 
 onMounted(() => {
-  console.log('Loading sequences from localStorage...')
   loadSequencesFromLocalStorage()
   connectWebSocket()
 })
@@ -66,133 +83,113 @@ function loadSequencesFromLocalStorage() {
   if (storedSequences) {
     try {
       sequences.value = JSON.parse(storedSequences)
-      console.log('Loaded sequences from localStorage:', sequences.value)
     } catch (error) {
       console.error('Failed to parse sequences from localStorage:', error)
     }
-  } else {
-    console.log('No sequences found in localStorage.')
   }
 }
 
 function saveSequencesToLocalStorage() {
-  console.log('Saving all sequences to localStorage:', sequences.value)
   localStorage.setItem('sequences', JSON.stringify(sequences.value))
 }
 
+/**
+ * 连接 WebSocket 并监听进度消息
+ */
 function connectWebSocket() {
-  console.log('Attempting to connect to WebSocket...')
+  console.log('SequenceResult: connecting WebSocket...')
   const socket = new SockJS('/sockjs/ws')
   const stompClient = new Client({
     webSocketFactory: () => socket,
     onConnect: () => {
-      console.log('WebSocket connected successfully')
       stompClient.subscribe(subscribeUrl, msg => {
         const messageBody = msg.body
-        console.log('Received message:', messageBody)
+        console.log('SequenceResult received message:', messageBody)
         statusMessage.value = messageBody
-        console.log('Status message updated:', statusMessage.value)
 
+        // 若包含 "Progress XX%"
         if (messageBody.includes('Progress')) {
           progress.value = messageBody
-          console.log('Progress updated:', progress.value)
+          const match = messageBody.match(/Progress\s+(\d+)%/)
+          if (match) {
+            // 拿到服务器进度
+            const newProg = parseInt(match[1], 10)
+            progressValue.value = newProg
+
+            // emit 给父组件 => 父组件更新进度
+            emits('progress-updated', newProg)
+          }
         }
 
+        // 若包含 "Sampling task completed"
         if (messageBody.includes('Sampling task completed')) {
           const match = messageBody.match(/result uploaded: (\S+)/)
           if (match) {
             resultUrl.value = match[1]
-            console.log('Result URL detected:', resultUrl.value)
-
-            // 替换URL中 https://minio.lumoxuan.cn/ayumerna/ 为 /ayumerna/
-            if (
-              resultUrl.value.includes('https://minio.lumoxuan.cn/ayumerna/')
-            ) {
-              resultUrl.value = resultUrl.value.replace(
-                'https://minio.lumoxuan.cn/ayumerna/',
-                '/ayumerna/',
-              )
-              console.log('Transformed result URL to:', resultUrl.value)
-            }
-
             downloadAndParseFile()
-          } else {
-            console.error('No result URL found in message:', messageBody)
           }
+          // 告诉父组件 => 任务完成
+          emits('task-completed')
         }
 
         nextTick(() => {
-          console.log('Next tick completed, data should be updated.')
+          console.log('SequenceResult: nextTick -> data updated.')
         })
       })
-    },
-    onStompError: error => {
-      console.error('STOMP Error:', error)
-    },
-    onWebSocketClose: () => {
-      console.log('WebSocket connection closed')
-    },
-    onWebSocketError: error => {
-      console.error('WebSocket Error:', error)
     },
   })
 
   stompClient.activate()
 }
 
+/**
+ * 下载并解析结果文件
+ */
 async function downloadAndParseFile() {
-  if (!resultUrl.value) {
-    console.log('No result URL found, skipping file download.')
-    return
-  }
-
-  console.log('Attempting to download file from URL:', resultUrl.value)
+  if (!resultUrl.value) return
   try {
-    const response = await fetch(resultUrl.value)
-    const text = await response.text()
-    console.log('File downloaded successfully, parsing content.')
+    const resp = await fetch(resultUrl.value)
+    const text = await resp.text()
+    console.log('File text:', text)
 
-    const parsedSequences = parseFastaFile(text)
-    sequences.value = parsedSequences
-    console.log('Sequences parsed and updated:', sequences.value)
-
+    const parsed = parseFastaFile(text)
+    sequences.value = parsed
     saveSequencesToLocalStorage()
   } catch (error) {
-    console.error('Error downloading or parsing the FA file:', error)
+    console.error('Error parsing file:', error)
   }
 }
 
+/**
+ * 解析FASTA文本
+ */
 function parseFastaFile(fileContent: string): Sequence[] {
-  console.log('Parsing FA file content:', fileContent)
   const lines = fileContent.split('\n')
-  const sequences: Sequence[] = []
-  let currentSequence = ''
+  const result: Sequence[] = []
+  let currentSeq = ''
 
-  lines.forEach(line => {
+  for (const line of lines) {
     if (line.startsWith('>')) {
-      if (currentSequence) {
-        sequences.push({
-          index: sequences.length + 1,
-          sequence: currentSequence,
-        })
+      if (currentSeq) {
+        result.push({ index: result.length + 1, sequence: currentSeq })
       }
-      currentSequence = ''
+      currentSeq = ''
     } else {
-      currentSequence += line.trim()
+      currentSeq += line.trim()
     }
-  })
-
-  if (currentSequence) {
-    sequences.push({ index: sequences.length + 1, sequence: currentSequence })
   }
 
-  return sequences
+  if (currentSeq) {
+    result.push({ index: result.length + 1, sequence: currentSeq })
+  }
+  return result
 }
 
+/**
+ * 跳转到下个页面
+ */
 function goToAnalysis() {
-  console.log('Saving all sequences before navigation:', sequences.value)
   saveSequencesToLocalStorage()
-  console.log('Navigating to analysis page')
   router.push({ name: 'tRNA Evaluator' })
 }
 </script>
@@ -215,12 +212,6 @@ h3 {
   margin-bottom: 0.5em;
 }
 
-.progress-info {
-  font-size: 1.1em;
-  color: #4caf50;
-  margin-top: 1em;
-}
-
 .select-note {
   font-size: 1.1em;
   color: #555;
@@ -237,8 +228,8 @@ h3 {
   font-size: 1em;
   font-weight: bold;
   cursor: pointer;
-  transition: background-color 0.3s ease;
   margin-top: 1em;
+  transition: background-color 0.3s ease;
 }
 
 .analysis-btn:hover {
