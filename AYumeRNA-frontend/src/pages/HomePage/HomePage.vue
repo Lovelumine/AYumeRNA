@@ -1,6 +1,6 @@
+<!-- src/pages/HomePage/HomePage.vue -->
 <template>
   <div class="welcome-container">
-
     <h1>Welcome to iSEE-tRNA</h1>
     <img
       src="https://minio.lumoxuan.cn/ayumerna/picture/flowchart.png"
@@ -39,8 +39,13 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const navigateToCodonGenerator = () => {
-  router.push('/CodonGenerator')
+const navigateToCodonGenerator = async () => {
+  try {
+    await router.push({ name: 'Sequence Generator' })
+    // 不需要在这里滚动，因为在 App.vue 中已经处理
+  } catch (error) {
+    console.error('路由导航错误:', error)
+  }
 }
 </script>
 

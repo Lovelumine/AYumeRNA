@@ -1,3 +1,4 @@
+<!-- src/App.vue -->
 <template>
   <div id="app" class="d-flex flex-column min-vh-100">
     <div class="row flex-grow-1">
@@ -17,16 +18,39 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import AppSidebar from './components/AppSidebar.vue';
 
-// 控制侧边栏展开/收起的状态
+// 导入 ref
 const isCollapsed = ref(false);
+const route = useRoute();
 
-// 切换侧边栏的状态
 function toggleSidebar() {
   isCollapsed.value = !isCollapsed.value;
 }
+
+// 监听路由变化并刷新页面，避免无限刷新
+watch(route, (newRoute, oldRoute) => {
+  console.log(`Route changed from ${String(oldRoute.name)} to ${String(newRoute.name)}`);
+
+  // 仅在导航到 /CodonGenerator 时触发刷新
+  if (newRoute.path === '/CodonGenerator') {
+    // 检查是否已经刷新过
+    const hasRefreshed = localStorage.getItem('codonGeneratorRefreshed');
+
+    if (!hasRefreshed) {
+      // 设置标记表示已刷新
+      localStorage.setItem('codonGeneratorRefreshed', 'true');
+      console.log('Refreshing the page for /CodonGenerator...');
+      window.location.reload();
+    } else {
+      // 清除标记，允许下一次刷新
+      localStorage.removeItem('codonGeneratorRefreshed');
+      console.log('/CodonGenerator has already been refreshed once.');
+    }
+  }
+});
 </script>
 
 <style scoped>
@@ -56,20 +80,23 @@ function toggleSidebar() {
 }
 
 #main-content {
-  flex-grow: 1;
-/* 主内容区域可滚动 */
+  margin-left: 240px; /* 默认侧边栏宽度 */
   transition: margin-left 0.3s ease; /* 控制主内容区域的过渡 */
+  flex-grow: 1;
+}
+
+#main-content.col-1 {
+  margin-left: 80px; /* 折叠后侧边栏宽度 */
 }
 
 .content {
-  flex: 1;
   padding: 20px; /* 为内容添加内边距 */
 }
 
 @media (max-width: 768px) {
-  /* #sidebar {
+  #sidebar {
     width: 80px; /* 窄侧边栏宽度 */
-
+  }
 
   #main-content {
     margin-left: 80px; /* 内容区域相应调整 */
