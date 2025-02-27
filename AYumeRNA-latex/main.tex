@@ -1,0 +1,61 @@
+\documentclass{article}
+
+\usepackage{arxiv}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{amsmath}
+\graphicspath{ {./images/} }
+
+\title{iSEE-tRNA: An Integrated Web Server for Generation, Evaluation, and Visualization of Engineered sup-tRNA}
+
+\author{
+ Zhuo Ouyang \\
+  School of Life Science\\
+  Sun Yat-sen University\\
+  Guangzhou, PA 510275 \\
+  \texttt{ouyzh25@mail2.sysu.edu.cn} \\
+   \And
+ Lingling Zheng \\
+  College of Agriculture and Biotechnology\\
+  Sun Yat-sen University\\
+  Shenzhen, PA 518107 \\
+  \texttt{zhengll33@mail.sysu.edu.cn} \\
+  \And
+%  Qiuhui Wu \\
+%  College of Agriculture and Biotechnology\\
+%  Sun Yat-sen University\\
+%  Shenzhen, PA 518107 \\
+%   \texttt{wuqh29@mail2.sysu.edu.cn} \\
+}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+    iSEE-tRNA is a comprehensive web server designed to address the challenges associated with the generation, evaluation, and visualization of engineered suppressor tRNAs (sup-tRNAs) for decoding stop codons. Suppressor tRNAs are a promising strategy for correcting nonsense mutations linked to various diseases, but current methods such as random mutagenesis and anticodon modification are time-consuming and cost-prohibitive. iSEE-tRNA offers an integrated solution by providing an AI-powered tRNA generation system that utilizes literature and database-derived data, coupled with the RFamGen algorithm to automatically generate novel sup-tRNA sequences tailored for stop codon decoding. The platform ensures multi-dimensional evaluation based on key criteria such as stop codon recognition, proper folding, identity element presence, and interaction with release factors, guaranteeing the functionality of engineered sup-tRNAs. Additionally, iSEE-tRNA incorporates intuitive visualization tools powered by R2DT and AlphaFold3, allowing users to inspect and refine their tRNA designs easily. By streamlining the process of sup-tRNA engineering and enabling systematic evaluation and visualization, iSEE-tRNA accelerates research in tRNA therapeutics and genetic code expansion, providing an accessible and cost-effective solution for the design and analysis of sup-tRNAs.
+    \end{abstract}
+
+\section{Introduction}
+\input{sections/introduction}
+
+\section{MATERIALS AND METHODS}
+\input{sections/task_description}
+
+\section{RESULTS}
+\input{sections/result}
+
+\section{DISCUSSION AND CONCLUSIONS}
+\input{sections/discussion}
+
+\bibliographystyle{unsrt}  
+\bibliography{references}  % External .bib file for references
+
+\end{document}
