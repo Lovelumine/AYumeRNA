@@ -42,6 +42,12 @@
       </s-table>
     </STableProvider>
 
+    <!-- Countdown block -->
+    <div v-if="countdown > 0" class="countdown">
+      Next step will start in {{ countdown }} seconds.
+      <button class="cancel-btn" @click="cancelCountdown">Cancel Countdown</button>
+    </div>
+
     <p class="select-note" v-if="sequences.length">
       The sequences are ready for analysis.
     </p>
@@ -104,13 +110,39 @@ onMounted(() => {
   connectWebSocket()
 })
 
+// Countdown reactive state and timer
+const countdown = ref(0)
+let countdownTimer: number | null = null
+
+function startCountdown(seconds: number = 10) {
+  if (countdownTimer !== null) return // Already counting down
+  countdown.value = seconds
+  countdownTimer = window.setInterval(() => {
+    countdown.value--
+    if (countdown.value <= 0) {
+      clearInterval(countdownTimer!)
+      countdownTimer = null
+      goToAnalysis()  // Automatically navigate to next step when countdown ends
+    }
+  }, 1000)
+}
+
+function cancelCountdown() {
+  if (countdownTimer !== null) {
+    clearInterval(countdownTimer)
+    countdownTimer = null
+  }
+  countdown.value = 0
+  console.log("Countdown cancelled")
+}
+
 // Load sequences from local storage
 function loadSequencesFromLocalStorage() {
   const storedSequences = localStorage.getItem('sequences')
   if (storedSequences) {
     try {
       sequences.value = JSON.parse(storedSequences)
-      console.log("Loaded sequences from localStorage:", sequences.value) // Console output
+      console.log("Loaded sequences from localStorage:", sequences.value)
     } catch (error) {
       console.error('Failed to parse sequences from localStorage:', error)
     }
@@ -119,7 +151,7 @@ function loadSequencesFromLocalStorage() {
 
 // Save sequences to local storage
 function saveSequencesToLocalStorage() {
-  console.log('Saving sequences to localStorage:', sequences.value) // Console output
+  console.log('Saving sequences to localStorage:', sequences.value)
   localStorage.setItem('sequences', JSON.stringify(sequences.value))
 }
 
@@ -143,7 +175,7 @@ function connectWebSocket() {
           if (match) {
             const newProg = parseInt(match[1], 10)
             progressValue.value = newProg
-            console.log('Progress updated:', newProg) // Console output
+            console.log('Progress updated:', newProg)
           }
         }
 
@@ -156,6 +188,8 @@ function connectWebSocket() {
           }
           // Notify parent component => task completed
           emits('task-completed')
+          // Start the countdown after task is completed
+          startCountdown(10)
         }
 
         nextTick(() => {
@@ -176,11 +210,11 @@ async function downloadAndParseFile() {
   try {
     const resp = await fetch(resultUrl.value)
     const text = await resp.text()
-    console.log('File text:', text) // Console output
+    console.log('File text:', text)
 
     const parsed = parseFastaFile(text)
     sequences.value = parsed
-    console.log('Parsed sequences:', sequences.value) // Console output
+    console.log('Parsed sequences:', sequences.value)
     saveSequencesToLocalStorage()
   } catch (error) {
     console.error('Error parsing file:', error)
@@ -198,7 +232,7 @@ function parseFastaFile(fileContent: string): Sequence[] {
   for (const line of lines) {
     if (line.startsWith('>')) {
       if (currentSeq) {
-        result.push({ key: `seq-${result.length + 1}`, index: result.length + 1, sequence: currentSeq }) // Add key field
+        result.push({ key: `seq-${result.length + 1}`, index: result.length + 1, sequence: currentSeq })
       }
       currentSeq = ''
     } else {
@@ -207,19 +241,19 @@ function parseFastaFile(fileContent: string): Sequence[] {
   }
 
   if (currentSeq) {
-    result.push({ key: `seq-${result.length + 1}`, index: result.length + 1, sequence: currentSeq }) // Add key field
+    result.push({ key: `seq-${result.length + 1}`, index: result.length + 1, sequence: currentSeq })
   }
 
-  console.log('Parsed sequence data:', result) // Console output
+  console.log('Parsed sequence data:', result)
   return result
 }
 
 /**
- * Go to the next page
+ * Go to the next page (Evaluator)
  */
 function goToAnalysis() {
   saveSequencesToLocalStorage()
-  router.push({ name: 'tRNA Evaluator' })
+  router.push({ name: 'Structure Folding Evaluation' })
 }
 </script>
 
@@ -263,5 +297,26 @@ h3 {
 
 .analysis-btn:hover {
   background-color: #45a049;
+}
+
+.countdown {
+  margin-top: 1em;
+  font-size: 1.2em;
+  color: #333;
+}
+
+.cancel-btn {
+  margin-left: 1em;
+  padding: 0.4em 0.8em;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+.cancel-btn:hover {
+  background-color: #d32f2f;
 }
 </style>
