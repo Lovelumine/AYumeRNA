@@ -13,8 +13,6 @@
       style="margin: 1em auto; width: 50%;"
     />
 
-
-
     <p v-if="resultUrl">
       Sampling task completed!
       <a :href="resultUrl" target="_blank" @click="downloadAndParseFile">
@@ -26,18 +24,23 @@
       Next Step: Evaluator
     </button>
 
-    <el-table v-if="sequences.length" :data="sequences" style="width: 100%">
-      <el-table-column prop="index" label="Index" width="80">
-        <template #default="scope">
-          {{ scope.$index + 1 }}
+    <!-- Using @shene/table component with locale -->
+    <STableProvider :locale="en">
+      <s-table
+        v-if="sequences.length"
+        :columns="columns"
+        :data-source="sequences"
+        :pagination="pagination"
+        style="width: 100%"
+        rowKey="sequence"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'sequence'">
+            <span>{{ record.sequence }}</span>
+          </template>
         </template>
-      </el-table-column>
-      <el-table-column prop="sequence" label="Sequence">
-        <template #default="scope">
-          {{ scope.row.sequence }}
-        </template>
-      </el-table-column>
-    </el-table>
+      </s-table>
+    </STableProvider>
 
     <p class="select-note" v-if="sequences.length">
       The sequences are ready for analysis.
@@ -53,11 +56,13 @@ import { ref, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
+import en from '@shene/table/dist/locale/en'  // Correctly import the 'en' locale
+import type { STableColumnsType, STablePaginationConfig } from '@shene/table'
 
 /**
- * 定义要 emit 的事件
- * "progress-updated" => 父组件更新进度
- * "task-completed"   => 父组件进度直接到 100
+ * Define events to emit
+ * "progress-updated" => Updates the progress in the parent component
+ * "task-completed"   => Sets progress to 100% in the parent component
  */
 const emits = defineEmits<{
   (e: 'progress-updated', value: number): void
@@ -65,16 +70,32 @@ const emits = defineEmits<{
 }>()
 
 type Sequence = {
+  key: string // Use unique key field
   index: number
   sequence: string
 }
 
 const statusMessage = ref('')
-const progress = ref('')
 const progressValue = ref<number|null>(null)
 const resultUrl = ref<string>('')
 const sequences = ref<Sequence[]>([])
 const router = useRouter()
+
+// Table column configuration
+const columns: STableColumnsType<Sequence> = [
+  { title: 'Index', dataIndex: 'index', key: 'index', width: 10 },
+  { title: 'Sequence', dataIndex: 'sequence', key: 'sequence', width: 800 },
+]
+
+// Pagination configuration
+const pagination: STablePaginationConfig = {
+  defaultCurrent: 1,
+  defaultPageSize: 5,
+  showQuickJumper: true,
+  showSizeChanger: true,
+  showTotal: total => `Total ${total} items`,
+  pageSizeOptions: ['5', '10', '20', '50']
+}
 
 const subscribeUrl = '/topic/progress/1'
 
@@ -83,23 +104,27 @@ onMounted(() => {
   connectWebSocket()
 })
 
+// Load sequences from local storage
 function loadSequencesFromLocalStorage() {
   const storedSequences = localStorage.getItem('sequences')
   if (storedSequences) {
     try {
       sequences.value = JSON.parse(storedSequences)
+      console.log("Loaded sequences from localStorage:", sequences.value) // Console output
     } catch (error) {
       console.error('Failed to parse sequences from localStorage:', error)
     }
   }
 }
 
+// Save sequences to local storage
 function saveSequencesToLocalStorage() {
+  console.log('Saving sequences to localStorage:', sequences.value) // Console output
   localStorage.setItem('sequences', JSON.stringify(sequences.value))
 }
 
 /**
- * 连接 WebSocket 并监听进度消息
+ * Connect WebSocket and listen to progress messages
  */
 function connectWebSocket() {
   console.log('SequenceResult: connecting WebSocket...')
@@ -112,28 +137,24 @@ function connectWebSocket() {
         console.log('SequenceResult received message:', messageBody)
         statusMessage.value = messageBody
 
-        // 若包含 "Progress XX%"
+        // If "Progress XX%" is present
         if (messageBody.includes('Progress')) {
-          progress.value = messageBody
           const match = messageBody.match(/Progress\s+(\d+)%/)
           if (match) {
-            // 拿到服务器进度
             const newProg = parseInt(match[1], 10)
             progressValue.value = newProg
-
-            // emit 给父组件 => 父组件更新进度
-            emits('progress-updated', newProg)
+            console.log('Progress updated:', newProg) // Console output
           }
         }
 
-        // 若包含 "Sampling task completed"
+        // If "Sampling task completed" is present
         if (messageBody.includes('Sampling task completed')) {
           const match = messageBody.match(/result uploaded: (\S+)/)
           if (match) {
             resultUrl.value = match[1]
             downloadAndParseFile()
           }
-          // 告诉父组件 => 任务完成
+          // Notify parent component => task completed
           emits('task-completed')
         }
 
@@ -148,17 +169,18 @@ function connectWebSocket() {
 }
 
 /**
- * 下载并解析结果文件
+ * Download and parse the result file
  */
 async function downloadAndParseFile() {
   if (!resultUrl.value) return
   try {
     const resp = await fetch(resultUrl.value)
     const text = await resp.text()
-    console.log('File text:', text)
+    console.log('File text:', text) // Console output
 
     const parsed = parseFastaFile(text)
     sequences.value = parsed
+    console.log('Parsed sequences:', sequences.value) // Console output
     saveSequencesToLocalStorage()
   } catch (error) {
     console.error('Error parsing file:', error)
@@ -166,7 +188,7 @@ async function downloadAndParseFile() {
 }
 
 /**
- * 解析FASTA文本
+ * Parse the FASTA file
  */
 function parseFastaFile(fileContent: string): Sequence[] {
   const lines = fileContent.split('\n')
@@ -176,7 +198,7 @@ function parseFastaFile(fileContent: string): Sequence[] {
   for (const line of lines) {
     if (line.startsWith('>')) {
       if (currentSeq) {
-        result.push({ index: result.length + 1, sequence: currentSeq })
+        result.push({ key: `seq-${result.length + 1}`, index: result.length + 1, sequence: currentSeq }) // Add key field
       }
       currentSeq = ''
     } else {
@@ -185,13 +207,15 @@ function parseFastaFile(fileContent: string): Sequence[] {
   }
 
   if (currentSeq) {
-    result.push({ index: result.length + 1, sequence: currentSeq })
+    result.push({ key: `seq-${result.length + 1}`, index: result.length + 1, sequence: currentSeq }) // Add key field
   }
+
+  console.log('Parsed sequence data:', result) // Console output
   return result
 }
 
 /**
- * 跳转到下个页面
+ * Go to the next page
  */
 function goToAnalysis() {
   saveSequencesToLocalStorage()

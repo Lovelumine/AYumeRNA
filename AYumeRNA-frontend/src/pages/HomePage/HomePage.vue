@@ -2,6 +2,9 @@
 <template>
   <div class="welcome-container">
     <h1>Welcome to iSEE-tRNA</h1>
+    <button class="start-button" @click="navigateToCodonGenerator">
+      Get Started
+    </button>
     <img
       src="https://minio.lumoxuan.cn/ayumerna/picture/flowchart.png"
       alt="tRNA Structure"
