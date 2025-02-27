@@ -3,7 +3,6 @@
     <h3>Sampling Task Status</h3>
     <p v-if="statusMessage">{{ statusMessage }}</p>
 
-    <!-- 这里也有进度条，但可以留空或只做调试用途 -->
     <el-progress
       v-if="progressValue !== null && !resultUrl"
       :text-inside="true"
@@ -14,12 +13,18 @@
       style="margin: 1em auto; width: 50%;"
     />
 
+
+
     <p v-if="resultUrl">
       Sampling task completed!
       <a :href="resultUrl" target="_blank" @click="downloadAndParseFile">
         Click to download the result
       </a>
     </p>
+
+    <button v-if="sequences.length" class="analysis-btn" @click="goToAnalysis">
+      Next Step: Evaluator
+    </button>
 
     <el-table v-if="sequences.length" :data="sequences" style="width: 100%">
       <el-table-column prop="index" label="Index" width="80">

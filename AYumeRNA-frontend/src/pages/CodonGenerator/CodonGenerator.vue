@@ -57,6 +57,10 @@ const progressValue = ref(0) // 父组件本地进度
 const isGenerating = ref(false)
 let intervalId: ReturnType<typeof setInterval> | null = null
 
+// 添加时间戳的键
+const TIMESTAMP_KEY = 'timestamp_sequences'
+
+// 更新模型
 function updateModel(modelName: string) {
   selectedModel.value = modelName
   console.log('Selected model updated to:', modelName)
@@ -103,6 +107,11 @@ function saveParametersToLocalStorage() {
   }
   localStorage.setItem('generationParameters', JSON.stringify(params))
   console.log('Saved generationParameters:', params)
+
+  // 保存时间戳
+  const timestamp = new Date().toISOString()
+  localStorage.setItem(TIMESTAMP_KEY, timestamp)
+  console.log('Saved timestamp:', timestamp)
 }
 
 /** 点击生成 */
