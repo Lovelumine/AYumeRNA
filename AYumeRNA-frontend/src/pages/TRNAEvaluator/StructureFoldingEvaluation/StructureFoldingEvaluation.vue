@@ -1,4 +1,3 @@
-<!-- src/pages/TRNAEvaluator/StructureFoldingEvaluation/StructureFoldingEvaluation.vue -->
 <template>
   <div class="structure-folding-evaluation">
     <h3 class="title">Structure Folding Evaluation</h3>
@@ -20,23 +19,26 @@
           {{ isCollapsed ? 'Expand Input' : 'Collapse Input' }}
         </button>
         <div v-show="!isCollapsed" class="form-container">
-          <div class="button-group">
-            <el-button type="primary" size="small" @click="loadExample">Load Example</el-button>
-          </div>
+          <el-form-item>
+  <div class="button-group-inline">
+    <el-button type="primary" class="collapse-button" size="small" @click="loadExample">Load Example</el-button>
+    <el-button class="collapse-button" @click="resetInput">Reset</el-button>
+  </div>
+</el-form-item>
           <el-form :model="sequenceInput" :rules="sequenceRules" ref="formRef" label-width="120px" @submit.prevent="handleSubmit">
             <el-form-item label="Enter Sequences" prop="sequences">
               <textarea
                 v-model="sequenceInput.sequences"
                 placeholder="Enter one sequence per line (only A, U, C, G allowed)"
-                maxlength="500"
                 class="custom-textarea"
                 rows="6"
               ></textarea>
             </el-form-item>
-            <el-form-item>
-              <el-button type="primary" @click="handleSubmit">Submit Sequences</el-button>
-              <el-button @click="resetInput">Reset</el-button>
-            </el-form-item>
+            <el-form-item class="center-btn" label-width="0">
+  <el-button type="primary" class="collapse-button" @click="handleSubmit">
+    Submit Sequences
+  </el-button>
+</el-form-item>
           </el-form>
         </div>
       </div>
@@ -188,18 +190,16 @@ const toggleCollapse = () => {
 
 // Load multiple example sequences
 const loadExample = () => {
-  sequenceInput.value.sequences = `
-    GUGUCUGUAGCUUAGUUGGUAAAAGUGCAGCACUCUAAAUGCUGAGAAUGUGGGUUCGACUCCCACCAGACACA
-    GGGUGUGUAGCCUAGUGGUAAAGGCAUCAGACUGUAAAUCUGAAGAAUGUGGGUUCGACUCCCACCACACCCA
-    GUCUCUAUAGCUUAGUUUGGUAAAAGCAUCAGACAUGUUUAAAAAUUCUAAUUUCAUACGUUCGACUCGCACUAGAGACA
-    GUCUCUGUGGCUUAGUUGGUAAAAGCGUACCACUCUAAAUGGUAAGGACGUGCGUUCGAAUCGCACCAGAGACA
-    GGGGCUGUGGCCUAGCUGGUAAAGGCACUGGACUGUAAAUCCAGAGAGUGUGAGUUCGACUCUCACCAGCCCCA
-    GUGUCUGUAGCUUAGUGGUAAAAGCAGCAGACUGUAAAAUUCUGAGGAUAUCCGUUCGAAUCGUACCAGAGACA
-    GGAUCUGUAGCCUAGUGGUGAAAAGGAUCAGACUGUAAAUCUGAGGAUGUGGGUUCGACUCCCACCUUGACACA
-    GUCUCUAUAGCUUAGUUGGUAAAAGGCAGCACUCUAAAUGCUGAGGACGUGGGUUCGACUCCCACCAGAGACA
-    GUCUCUGUAGCUUAGUGGUAAAAGGGAGCACACUGUAAAAUGCUGAGGAUGUGGGUUCAAAUCCCACCAGACACA
-    GGGUCUGUAGCUUAGUUGGUAAAGGCAGCACUCUAAAUGCUGAGGAUGUGGGUUCGACUCCCACCAGACACA
-  `;
+  sequenceInput.value.sequences = `GUGUCUGUAGCUUAGUUGGUAAAAGUGCAGCACUCUAAAUGCUGAGAAUGUGGGUUCGACUCCCACCAGACACA
+GGGUGUGUAGCCUAGUGGUAAAGGCAUCAGACUGUAAAUCUGAAGAAUGUGGGUUCGACUCCCACCACACCCA
+GUCUCUAUAGCUUAGUUUGGUAAAAGCAUCAGACAUGUUUAAAAAUUCUAAUUUCAUACGUUCGACUCGCACUAGAGACA
+GUCUCUGUGGCUUAGUUGGUAAAAGCGUACCACUCUAAAUGGUAAGGACGUGCGUUCGAAUCGCACCAGAGACA
+GGGGCUGUGGCCUAGCUGGUAAAGGCACUGGACUGUAAAUCCAGAGAGUGUGAGUUCGACUCUCACCAGCCCCA
+GUGUCUGUAGCUUAGUGGUAAAAGCAGCAGACUGUAAAAUUCUGAGGAUAUCCGUUCGAAUCGUACCAGAGACA
+GGAUCUGUAGCCUAGUGGUGAAAAGGAUCAGACUGUAAAUCUGAGGAUGUGGGUUCGACUCCCACCUUGACACA
+GUCUCUAUAGCUUAGUUGGUAAAAGGCAGCACUCUAAAUGCUGAGGACGUGGGUUCGACUCCCACCAGAGACA
+GUCUCUGUAGCUUAGUGGUAAAAGGGAGCACACUGUAAAAUGCUGAGGAUGUGGGUUCAAAUCCCACCAGACACA
+GGGUCUGUAGCUUAGUUGGUAAAGGCAGCACUCUAAAUGCUGAGGAUGUGGGUUCGACUCCCACCAGACACA`.trim()
 }
 
 // 处理表单提交
@@ -229,6 +229,12 @@ const handleSubmit = () => {
 
         // 提供成功反馈
         ElMessage.success('The new sequences have been successfully uploaded and overwrite the previous ones.')
+
+        // 滚动到表格区域
+        const tableSection = document.querySelector('.styled-table')
+        if (tableSection) {
+          tableSection.scrollIntoView({ behavior: 'smooth' })
+        }
       }
     })
   }
@@ -361,12 +367,16 @@ onMounted(() => {
 }
 
 
-.button-group {
-  text-align: right;
-  margin-bottom: 10px;
+.button-group-inline {
+  display: flex;
+  gap: 10px; /* 按钮之间的间距，根据需要调整 */
+  justify-content: center; /* 居中显示 */
+  align-items: center;
 }
 
 .custom-textarea {
+  white-space: pre-wrap;
+  /* 保留原有样式 */
   width: 100%;
   min-height: 150px;
   background-color: #f5f7fa;
@@ -500,5 +510,9 @@ onMounted(() => {
 
 .modal-button:hover {
   background-color: #66b1ff;
+}
+
+.center-btn {
+  text-align: center;
 }
 </style>
