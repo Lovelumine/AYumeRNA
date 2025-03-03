@@ -8,41 +8,45 @@
 
     <!-- 用户输入序列的表单 -->
     <el-card shadow="hover" class="input-card">
-      <h4>Input New Sequences</h4>
-      <p class="input-description">
-        You can enter your own sequences for processing. You are not limited to using system-generated sequences. Please enter one sequence per line (only A, U, C, G allowed).
-      </p>
-
-      <!-- 自定义折叠框，仅折叠输入区域 -->
-      <div class="collapse-container">
-        <button class="collapse-button" @click="toggleCollapse">
-          {{ isCollapsed ? 'Expand Input' : 'Collapse Input' }}
-        </button>
-        <div v-show="!isCollapsed" class="form-container">
-          <el-form-item>
-  <div class="button-group-inline">
-    <el-button type="primary" class="collapse-button" size="small" @click="loadExample">Load Example</el-button>
-    <el-button class="collapse-button" @click="resetInput">Reset</el-button>
+  <div class="input-header">
+    <h4>Input New Sequences</h4>
+    <div class="button-group-inline">
+      <button class="collapse-button" @click="toggleCollapse">
+        {{ isCollapsed ? 'Expand Input' : 'Collapse Input' }}
+      </button>
+      <el-button type="primary" class="collapse-button" size="small" @click="loadExample">
+        Load Example
+      </el-button>
+      <el-button class="collapse-button" size="small" @click="resetInput">
+        Reset
+      </el-button>
+    </div>
   </div>
-</el-form-item>
-          <el-form :model="sequenceInput" :rules="sequenceRules" ref="formRef" label-width="120px" @submit.prevent="handleSubmit">
-            <el-form-item label="Enter Sequences" prop="sequences">
-              <textarea
-                v-model="sequenceInput.sequences"
-                placeholder="Enter one sequence per line (only A, U, C, G allowed)"
-                class="custom-textarea"
-                rows="6"
-              ></textarea>
-            </el-form-item>
-            <el-form-item class="center-btn" label-width="0">
-  <el-button type="primary" class="collapse-button" @click="handleSubmit">
-    Submit Sequences
-  </el-button>
-</el-form-item>
-          </el-form>
-        </div>
-      </div>
-    </el-card>
+  <p class="input-description">
+    You can enter your own sequences for processing. You are not limited to using system-generated sequences.
+    Please enter one sequence per line (only A, U, C, G allowed).
+  </p>
+  <!-- 后续内容 -->
+  <div class="collapse-container">
+    <div v-show="!isCollapsed" class="form-container">
+      <el-form :model="sequenceInput" :rules="sequenceRules" ref="formRef" label-width="120px" @submit.prevent="handleSubmit">
+        <el-form-item label="Enter Sequences" prop="sequences">
+          <textarea
+            v-model="sequenceInput.sequences"
+            placeholder="Enter one sequence per line (only A, U, C, G allowed)"
+            class="custom-textarea"
+            rows="6"
+          ></textarea>
+        </el-form-item>
+        <el-form-item class="center-btn" label-width="0">
+          <el-button type="primary" class="collapse-button" @click="handleSubmit">
+            Submit Sequences
+          </el-button>
+        </el-form-item>
+      </el-form>
+    </div>
+  </div>
+</el-card>
 
     <!-- 多选操作按钮 -->
     <div class="action-buttons">
@@ -366,11 +370,17 @@ onMounted(() => {
   background-color: #66b1ff;
 }
 
+.input-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  /* 如果需要，可以添加 margin-bottom 调整与下方的间距 */
+  margin-bottom: 10px;
+}
 
 .button-group-inline {
   display: flex;
-  gap: 10px; /* 按钮之间的间距，根据需要调整 */
-  justify-content: center; /* 居中显示 */
+  gap: 10px; /* 按钮间距 */
   align-items: center;
 }
 
@@ -514,5 +524,13 @@ onMounted(() => {
 
 .center-btn {
   text-align: center;
+}
+
+.button-row {
+  display: flex;
+  justify-content: center; /* 居中对齐，可根据需要调整 */
+  align-items: center;
+  gap: 10px; /* 按钮之间的间距 */
+  margin-bottom: 10px; /* 与下方内容保持间隔 */
 }
 </style>
