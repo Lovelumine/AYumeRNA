@@ -89,16 +89,24 @@ export const columns: STableColumnsType<SequenceInfo> = [
     width: 100
   }
 ]
+interface OnChangeExtra {
+  type: string;
+  checked: boolean;
+}
 
-// 定义 rowSelection 配置
 export const defaultRowSelection: STableRowSelection<SequenceInfo> = {
-  hideSelectAll: false, // 根据需要隐藏全选框
-  onChange: (selectedRowKeys: Key[], selectedRows: SequenceInfo[]) => {
-    console.log(`selectedRowKeys: ${selectedRowKeys}`, 'selectedRows: ', selectedRows)
+  hideSelectAll: true, // 根据需要隐藏全选框
+  onChange: (
+    selectedRowKeys: Key[],
+    selectedRows: SequenceInfo[],
+    extra?: OnChangeExtra
+  ) => {
+    console.log('onChange selectedRowKeys:', selectedRowKeys);
+    console.log('onChange selectedRows:', selectedRows);
+    console.log('onChange extra:', extra);
   },
   getCheckboxProps: (record: SequenceInfo) => ({
-    // 根据需要禁用某些行的选择框
     disabled: record.sequence === '特定序列', // 例如，禁用序列为 '特定序列' 的行
     name: record.sequence
   })
-}
+};

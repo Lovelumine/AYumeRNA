@@ -138,9 +138,9 @@ const fetchAllSequenceInfo = async (currentTimestamp: string) => {
 // 存储序列并跳转到 /visualization
 export function handleAnalyzeSequence(record: SequenceInfo) {
   localStorage.setItem('analyzedSequence', JSON.stringify(record))
-  router.push('/visualization').then(() => {
-    console.log('导航到 /visualization')
-  })
+  // 获取 /visualization 的完整 URL
+  const url = router.resolve('/visualization').href;
+  window.open(url, '_blank'); // 在新标签页中打开
 }
 
 // 更新序列和时间戳

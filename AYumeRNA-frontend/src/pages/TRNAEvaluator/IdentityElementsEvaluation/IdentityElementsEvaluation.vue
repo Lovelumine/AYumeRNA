@@ -157,10 +157,10 @@
       <!-- Task has been submitted. Waiting for results... -->
     </p>
 
-    <div v-if="wsMessages.length" class="message-container">
+    <!-- <div v-if="wsMessages.length" class="message-container">
       <h3>Push Notification</h3>
       <p class="message-item">{{ wsMessages[0] }}</p>
-    </div>
+    </div> -->
 
     <button
       v-if="resultDownloadUrl"

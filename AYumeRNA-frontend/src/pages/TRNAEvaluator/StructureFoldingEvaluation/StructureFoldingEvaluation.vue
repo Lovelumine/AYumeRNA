@@ -48,15 +48,28 @@
   </div>
 </el-card>
 
-    <!-- 多选操作按钮 -->
-    <div class="action-buttons">
-      <ElButton type="primary" @click="downloadSelectedSequences" :disabled="selectedRows.length === 0">
-        Download Selected Sequences
-      </ElButton>
-      <ElButton type="success" @click="handleNavigate">
-        Navigate to Identity Elements
-      </ElButton>
-    </div>
+<!-- 多选操作按钮 -->
+<div class="action-buttons">
+  <el-button
+    ref="selectAllButton"
+    type="primary"
+    class="collapse-button"
+    @click="handleSelectAll">
+    SelectAll
+  </el-button>
+  <el-button
+    type="primary"
+    class="collapse-button"
+    @click="handleClearSelection">
+    Clear Selection
+  </el-button>
+  <el-button type="primary" class="collapse-button" @click="downloadSelectedSequences" :disabled="selectedRows.length === 0">
+    Download Selected Sequences
+  </el-button>
+  <el-button type="primary" class="collapse-button" @click="handleNavigate">
+    Navigate to Identity Elements
+  </el-button>
+</div>
 
     <!-- 使用自定义样式的表格展示 -->
     <s-table-provider :locale="en">
@@ -118,7 +131,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted , nextTick } from 'vue'
 import { ElButton, ElForm, ElFormItem, ElCard, ElMessage } from 'element-plus'
 import en from '@shene/table/dist/locale/en'
 import { columns, defaultRowSelection } from './tableConfig'
@@ -145,10 +158,20 @@ const highlightSelected = ref(true)
 const selectedRowKeys = ref<Key[]>([])
 const selectedRows = ref<SequenceInfo[]>([])
 
+const handleSelectAll = () => {
+  // 假设 dataSource 包含了所有页的数据
+  const allKeys = dataSource.value.map(item => item.key);
+  selectedRowKeys.value = allKeys;
+  selectedRows.value = [...dataSource.value];
+  console.log('全选（跨页）后，selectedRowKeys:', allKeys);
+};
+
 // 定义 rowSelection
 const rowSelection = computed<STableRowSelection<SequenceInfo>>(() => ({
   ...defaultRowSelection,
+  selectedRowKeys: selectedRowKeys.value, // 将默认选中状态传给表格
   onChange: (keys: Key[], rows: SequenceInfo[]) => {
+    console.log('onChange keys:', keys, 'rows:', rows);
     selectedRowKeys.value = keys
     selectedRows.value = rows
   }
@@ -312,6 +335,12 @@ const handleNavigate = () => {
   })
 }
 
+const handleClearSelection = () => {
+  selectedRowKeys.value = [];
+  selectedRows.value = [];
+  console.log('已取消所有选中');
+};
+
 // 自定义弹出提示框控制
 const showCustomModal = ref(false)
 
@@ -320,10 +349,17 @@ const closeModal = () => {
   showCustomModal.value = false
 }
 
+// 新增 ref 用于按钮引用
+const selectAllButton = ref<HTMLElement | null>(null);
+
+
+
 // 加载数据在组件挂载时
-onMounted(() => {
-  loadSequences()
-})
+onMounted(async () => {
+  loadSequences();
+  await nextTick();
+  handleSelectAll();
+});
 </script>
 
 <style scoped>
@@ -351,7 +387,6 @@ onMounted(() => {
 
 .collapse-container {
   border-top: 1px solid #dcdfe6;
-  padding-top: 10px;
 }
 
 .collapse-button {
