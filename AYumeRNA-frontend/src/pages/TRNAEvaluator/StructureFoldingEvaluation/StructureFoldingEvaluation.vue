@@ -8,70 +8,89 @@
 
     <!-- 用户输入序列的表单 -->
     <el-card shadow="hover" class="input-card">
-  <div class="input-header">
-    <h4>Input New Sequences</h4>
-    <div class="button-group-inline">
-      <button class="collapse-button" @click="toggleCollapse">
-        {{ isCollapsed ? 'Expand Input' : 'Collapse Input' }}
-      </button>
-      <el-button type="primary" class="collapse-button" size="small" @click="loadExample">
-        Load Example
-      </el-button>
-      <el-button class="collapse-button" size="small" @click="resetInput">
-        Reset
-      </el-button>
-    </div>
-  </div>
-  <p class="input-description">
-    You can enter your own sequences for processing. You are not limited to using system-generated sequences.
-    Please enter one sequence per line (only A, U, C, G allowed).
-  </p>
-  <!-- 后续内容 -->
-  <div class="collapse-container">
-    <div v-show="!isCollapsed" class="form-container">
-      <el-form :model="sequenceInput" :rules="sequenceRules" ref="formRef" label-width="120px" @submit.prevent="handleSubmit">
-        <el-form-item label="Enter Sequences" prop="sequences">
-          <textarea
-            v-model="sequenceInput.sequences"
-            placeholder="Enter one sequence per line (only A, U, C, G allowed)"
-            class="custom-textarea"
-            rows="6"
-          ></textarea>
-        </el-form-item>
-        <el-form-item class="center-btn" label-width="0">
-          <el-button type="primary" class="collapse-button" @click="handleSubmit">
-            Submit Sequences
+      <div class="input-header">
+        <h4>Input New Sequences</h4>
+        <div class="button-group-inline">
+          <button class="collapse-button" @click="toggleCollapse">
+            {{ isCollapsed ? 'Expand Input' : 'Collapse Input' }}
+          </button>
+          <el-button type="primary" class="collapse-button" size="small" @click="loadExample">
+            Load Example
           </el-button>
-        </el-form-item>
-      </el-form>
+          <el-button class="collapse-button" size="small" @click="resetInput">
+            Reset
+          </el-button>
+        </div>
+      </div>
+      <p class="input-description">
+        You can enter your own sequences for processing. You are not limited to using system-generated sequences.
+        Please enter one sequence per line (only A, U, C, G allowed).
+      </p>
+      <div class="collapse-container">
+        <div v-show="!isCollapsed" class="form-container">
+          <el-form :model="sequenceInput" :rules="sequenceRules" ref="formRef" label-width="120px" @submit.prevent="handleSubmit">
+            <el-form-item label="Enter Sequences" prop="sequences">
+              <textarea
+                v-model="sequenceInput.sequences"
+                placeholder="Enter one sequence per line (only A, U, C, G allowed)"
+                class="custom-textarea"
+                rows="6"
+              ></textarea>
+            </el-form-item>
+            <el-form-item class="center-btn" label-width="0">
+              <el-button type="primary" class="collapse-button" @click="handleSubmit">
+                Submit Sequences
+              </el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+      </div>
+    </el-card>
+
+    <!-- 多选操作按钮 -->
+    <div class="action-buttons">
+      <el-button
+        ref="selectAllButton"
+        type="primary"
+        class="collapse-button"
+        @click="handleSelectAll">
+        SelectAll
+      </el-button>
+      <el-button
+        type="primary"
+        class="collapse-button"
+        @click="handleClearSelection">
+        Clear Selection
+      </el-button>
+      <el-button
+        type="primary"
+        class="collapse-button"
+        @click="handleSelectScore70">
+        Select Infernal Score ≥ 70
+      </el-button>
+      <el-button
+        type="primary"
+        class="collapse-button"
+        @click="downloadSelectedSequences"
+        :style="{
+          backgroundColor: isSelected ? 'green' : '#c0c4cc',
+          borderColor: isSelected ? 'green' : '#c0c4cc'
+        }">
+        Download Selected Sequences
+      </el-button>
+      <el-button
+        type="primary"
+        class="collapse-button"
+        @click="handleNavigate"
+        :style="{
+          backgroundColor: isSelected ? 'green' : '#c0c4cc',
+          borderColor: isSelected ? 'green' : '#c0c4cc'
+        }">
+        Navigate to Identity Elements
+      </el-button>
     </div>
-  </div>
-</el-card>
 
-<!-- 多选操作按钮 -->
-<div class="action-buttons">
-  <el-button
-    ref="selectAllButton"
-    type="primary"
-    class="collapse-button"
-    @click="handleSelectAll">
-    SelectAll
-  </el-button>
-  <el-button
-    type="primary"
-    class="collapse-button"
-    @click="handleClearSelection">
-    Clear Selection
-  </el-button>
-  <el-button type="primary" class="collapse-button" @click="downloadSelectedSequences" :disabled="selectedRows.length === 0">
-    Download Selected Sequences
-  </el-button>
-  <el-button type="primary" class="collapse-button" @click="handleNavigate">
-    Navigate to Identity Elements
-  </el-button>
-</div>
-
-    <!-- 使用自定义样式的表格展示 -->
+    <!-- 表格展示 -->
     <s-table-provider :locale="en">
       <s-table
         :columns="columns"
@@ -80,8 +99,7 @@
         row-key="key"
         :row-selection="rowSelection"
         :highlight-selected="highlightSelected"
-        class="styled-table"
-      >
+        class="styled-table">
         <template #bodyCell="{ text, column, record }">
           <template v-if="column.key === 'sequence'">
             <a>{{ text }}</a>
@@ -124,66 +142,95 @@
       </div>
     </div>
 
-    <!-- 加载和错误提示 -->
+    <!-- Loading 和错误提示 -->
     <div v-if="loading" class="loading">Loading...</div>
     <div v-if="error" class="error">{{ error }}</div>
+
+    <!-- 附加信息区域：Infernal Score &amp; Transcanse Background -->
+    <div class="additional-info">
+      <h4>About Infernal Score &amp; Transcanse</h4>
+      <p>
+        The <strong>Infernal Score</strong> is computed using the Transcanse tool, which leverages the core algorithms of the Infernal software.
+        This score indicates how well a tRNA sequence matches the known structural model.
+        A higher score implies a better match, serving as an objective measure of tRNA structural stability and confidence.
+      </p>
+      <blockquote>
+        Chan, P.P., Lin, B.Y., Mak, A.J., and Lowe, T.M. (2021). tRNAscan-SE 2.0: Improved Detection and Functional Classification of Transfer RNA Genes.
+        <em>Nucl. Acids Res.</em> 49:9077–9096.
+      </blockquote>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted , nextTick } from 'vue'
-import { ElButton, ElForm, ElFormItem, ElCard, ElMessage } from 'element-plus'
-import en from '@shene/table/dist/locale/en'
-import { columns, defaultRowSelection } from './tableConfig'
-import type { Key, SequenceInfo, Sequence } from './tableConfig'
-import {
-  dataSource,
-  loading,
-  error,
-  loadSequences,
-  handleAnalyzeSequence,
-  updateSequences
-} from './logic'
-import { useRouter } from 'vue-router'
-import type { STableRowSelection } from '@shene/table'
-import type { FormInstance, FormRules } from 'element-plus'
+import { ref, computed, onMounted, nextTick } from 'vue';
+import { ElButton, ElForm, ElFormItem, ElCard, ElMessage } from 'element-plus';
+import en from '@shene/table/dist/locale/en';
+import { columns, defaultRowSelection } from './tableConfig';
+import type { Key, SequenceInfo, Sequence } from './tableConfig';
+import { dataSource, loading, error, loadSequences, handleAnalyzeSequence, updateSequences } from './logic';
+import { useRouter } from 'vue-router';
+import type { STableRowSelection } from '@shene/table';
+import type { FormInstance, FormRules } from 'element-plus';
 
 // 初始化路由
-const router = useRouter()
+const router = useRouter();
 
 // 控制高亮选择项
-const highlightSelected = ref(true)
+const highlightSelected = ref(true);
 
 // 存储选中的行
-const selectedRowKeys = ref<Key[]>([])
-const selectedRows = ref<SequenceInfo[]>([])
+const selectedRowKeys = ref<Key[]>([]);
+const selectedRows = ref<SequenceInfo[]>([]);
+
+// 计算是否有选中数据
+const isSelected = computed(() => selectedRows.value.length > 0);
 
 const handleSelectAll = () => {
-  // 假设 dataSource 包含了所有页的数据
+  // 假设 dataSource 包含所有页数据
   const allKeys = dataSource.value.map(item => item.key);
   selectedRowKeys.value = allKeys;
   selectedRows.value = [...dataSource.value];
   console.log('全选（跨页）后，selectedRowKeys:', allKeys);
 };
 
-// 定义 rowSelection
+const handleClearSelection = () => {
+  selectedRowKeys.value = [];
+  selectedRows.value = [];
+  console.log('已取消所有选中');
+};
+
+// 新增方法：选择 Infernal Score ≥ 70 的行
+const handleSelectScore70 = () => {
+  const filteredRows = dataSource.value.filter(row => {
+    let score = row.infernalScore;
+    if (typeof score === 'string') {
+      score = parseFloat(score);
+    }
+    return typeof score === 'number' && score >= 70;
+  });
+  selectedRowKeys.value = filteredRows.map(row => row.key);
+  selectedRows.value = filteredRows;
+  console.log('Selected rows with Infernal Score ≥ 70:', selectedRowKeys.value);
+};
+
 const rowSelection = computed<STableRowSelection<SequenceInfo>>(() => ({
   ...defaultRowSelection,
-  selectedRowKeys: selectedRowKeys.value, // 将默认选中状态传给表格
+  selectedRowKeys: selectedRowKeys.value,
   onChange: (keys: Key[], rows: SequenceInfo[]) => {
     console.log('onChange keys:', keys, 'rows:', rows);
-    selectedRowKeys.value = keys
-    selectedRows.value = rows
+    selectedRowKeys.value = keys;
+    selectedRows.value = rows;
   }
-}))
+}));
 
 // 用户输入的序列
 const sequenceInput = ref({
-  sequences: '' // Initially empty
-})
+  sequences: ''
+});
 
 // 表单引用
-const formRef = ref<FormInstance>()
+const formRef = ref<FormInstance>();
 
 // 表单验证规则
 const sequenceRules: FormRules = {
@@ -191,31 +238,28 @@ const sequenceRules: FormRules = {
     {
       validator: (rule, value: string, callback: (error?: Error) => void) => {
         if (!value.trim()) {
-          callback(new Error('Please enter at least one sequence.'))
+          callback(new Error('Please enter at least one sequence.'));
         } else {
-          const sequences = value.split('\n').map(seq => seq.trim()).filter(seq => seq.length > 0)
-          const invalidSequences = sequences.filter(seq => !/^[AUCGaucg]+$/.test(seq))
+          const sequences = value.split('\n').map(seq => seq.trim()).filter(seq => seq.length > 0);
+          const invalidSequences = sequences.filter(seq => !/^[AUCGaucg]+$/.test(seq));
           if (invalidSequences.length > 0) {
-            callback(new Error(`The following sequences are incorrect (only A, U, C, G allowed):\n${invalidSequences.join('\n')}`))
+            callback(new Error(`The following sequences are incorrect (only A, U, C, G allowed):\n${invalidSequences.join('\n')}`));
           } else {
-            callback()
+            callback();
           }
         }
       },
       trigger: 'blur'
     }
   ]
-}
+};
 
 // 自定义折叠状态
-const isCollapsed = ref(true)
-
-// 切换折叠状态
+const isCollapsed = ref(true);
 const toggleCollapse = () => {
-  isCollapsed.value = !isCollapsed.value
-}
+  isCollapsed.value = !isCollapsed.value;
+};
 
-// Load multiple example sequences
 const loadExample = () => {
   sequenceInput.value.sequences = `GUGUCUGUAGCUUAGUUGGUAAAAGUGCAGCACUCUAAAUGCUGAGAAUGUGGGUUCGACUCCCACCAGACACA
 GGGUGUGUAGCCUAGUGGUAAAGGCAUCAGACUGUAAAUCUGAAGAAUGUGGGUUCGACUCCCACCACACCCA
@@ -226,89 +270,75 @@ GUGUCUGUAGCUUAGUGGUAAAAGCAGCAGACUGUAAAAUUCUGAGGAUAUCCGUUCGAAUCGUACCAGAGACA
 GGAUCUGUAGCCUAGUGGUGAAAAGGAUCAGACUGUAAAUCUGAGGAUGUGGGUUCGACUCCCACCUUGACACA
 GUCUCUAUAGCUUAGUUGGUAAAAGGCAGCACUCUAAAUGCUGAGGACGUGGGUUCGACUCCCACCAGAGACA
 GUCUCUGUAGCUUAGUGGUAAAAGGGAGCACACUGUAAAAUGCUGAGGAUGUGGGUUCAAAUCCCACCAGACACA
-GGGUCUGUAGCUUAGUUGGUAAAGGCAGCACUCUAAAUGCUGAGGAUGUGGGUUCGACUCCCACCAGACACA`.trim()
-}
+GGGUCUGUAGCUUAGUUGGUAAAGGCAGCACUCUAAAUGCUGAGGAUGUGGGUUCGACUCCCACCAGACACA`.trim();
+};
 
-// 处理表单提交
 const handleSubmit = () => {
   if (formRef.value) {
     formRef.value.validate((valid: boolean) => {
       if (valid) {
-        const inputText = sequenceInput.value.sequences.trim()
-        // 将输入的文本按行分割，并去除空行
+        const inputText = sequenceInput.value.sequences.trim();
         const newSequencesArray = inputText
           .split('\n')
           .map(seq => seq.trim())
-          .filter(seq => seq.length > 0)
+          .filter(seq => seq.length > 0);
 
-        // 构建 Sequence 数组，分配唯一的 key
-        const timestamp = new Date().getTime().toString()
+        const timestamp = new Date().getTime().toString();
         const newSequences: Sequence[] = newSequencesArray.map((seq, index) => ({
           key: `${timestamp}_${index}`,
-          sequence: seq.toUpperCase() // 转换为大写
-        }))
+          sequence: seq.toUpperCase()
+        }));
 
-        // 更新序列和时间戳
-        updateSequences(newSequences)
+        updateSequences(newSequences);
+        sequenceInput.value.sequences = '';
+        ElMessage.success('The new sequences have been successfully uploaded and overwrite the previous ones.');
 
-        // 清空输入框
-        sequenceInput.value.sequences = ''
-
-        // 提供成功反馈
-        ElMessage.success('The new sequences have been successfully uploaded and overwrite the previous ones.')
-
-        // 滚动到表格区域
-        const tableSection = document.querySelector('.styled-table')
+        const tableSection = document.querySelector('.styled-table');
         if (tableSection) {
-          tableSection.scrollIntoView({ behavior: 'smooth' })
+          tableSection.scrollIntoView({ behavior: 'smooth' });
         }
       }
-    })
+    });
   }
-}
+};
 
-// 重置输入框
 const resetInput = () => {
-  sequenceInput.value.sequences = ''
-  ElMessage.info('Input has been reset.')
-}
+  sequenceInput.value.sequences = '';
+  ElMessage.info('Input has been reset.');
+};
 
-// 定义下载选中序列的函数
 const downloadSelectedSequences = () => {
-  if (selectedRows.value.length === 0) return
+  if (selectedRows.value.length === 0) {
+    showCustomModal.value = true;
+    return;
+  }
 
-  // 将选中的序列转换为 CSV 格式
-  const headers = ['key', 'sequence', 'anticodon', 'infernalScore', 'tRNAStart', 'tRNAEnd', 'tRNAType']
+  const headers = ['key', 'sequence', 'anticodon', 'infernalScore', 'tRNAStart', 'tRNAEnd', 'tRNAType'];
   const csvContent = [
-    headers.join(','), // Header row
+    headers.join(','),
     ...selectedRows.value.map(row =>
       `${row.key},"${row.sequence}","${row.anticodon}","${row.infernalScore}","${row.tRNAStart}","${row.tRNAEnd}","${row.tRNAType}"`
     )
-  ].join('\n')
+  ].join('\n');
 
-  // 创建一个 Blob 对象
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
 
-  // 创建一个临时链接并触发下载
-  const link = document.createElement('a')
-  link.setAttribute('href', url)
-  link.setAttribute('download', 'selected_sequences.csv')
-  link.style.visibility = 'hidden'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-}
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', 'selected_sequences.csv');
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
 
-// 定义处理导航到 Identity Elements 的函数
 const handleNavigate = () => {
   if (selectedRows.value.length === 0) {
-    // 使用自定义的弹出提示框
-    showCustomModal.value = true
-    return
+    showCustomModal.value = true;
+    return;
   }
 
-  // 将选中的序列转换为缓存格式
   const cachedSequencesAfterStepOne = selectedRows.value.map(row => ({
     key: row.key,
     sequence: row.sequence,
@@ -317,47 +347,35 @@ const handleNavigate = () => {
     tRNAStart: row.tRNAStart,
     tRNAEnd: row.tRNAEnd,
     tRNAType: row.tRNAType,
-  }))
+  }));
 
-  // 获取当前时间戳
-  const timestamp = new Date().toISOString()
+  const timestamp = new Date().toISOString();
+  localStorage.setItem('timestamp_cached_sequences_after_stepone', timestamp);
+  localStorage.setItem('cached_sequences_after_stepone', JSON.stringify(cachedSequencesAfterStepOne));
 
-  // 存储时间戳到 localStorage
-  localStorage.setItem('timestamp_cached_sequences_after_stepone', timestamp)
-
-  // 存储选中的序列到 localStorage
-  localStorage.setItem('cached_sequences_after_stepone', JSON.stringify(cachedSequencesAfterStepOne))
-
-  // 跳转到 identity-elements 页面
   router.push('/trna-evaluator/identity-elements').then(() => {
-    ElMessage.success('Navigated to Identity Elements page.')
-    console.log('Navigated to /trna-evaluator/identity-elements')
-  })
-}
-
-const handleClearSelection = () => {
-  selectedRowKeys.value = [];
-  selectedRows.value = [];
-  console.log('已取消所有选中');
+    ElMessage.success('Navigated to Identity Elements page.');
+    console.log('Navigated to /trna-evaluator/identity-elements');
+  });
 };
 
-// 自定义弹出提示框控制
-const showCustomModal = ref(false)
+// const handleClearSelection = () => {
+//   selectedRowKeys.value = [];
+//   selectedRows.value = [];
+//   console.log('All selections cleared');
+// };
 
-// 关闭弹出提示框
+const showCustomModal = ref(false);
 const closeModal = () => {
-  showCustomModal.value = false
-}
+  showCustomModal.value = false;
+};
 
-// 新增 ref 用于按钮引用
 const selectAllButton = ref<HTMLElement | null>(null);
 
-
-
-// 加载数据在组件挂载时
 onMounted(async () => {
   loadSequences();
   await nextTick();
+  // 自动调用全选方法（根据需要可取消此行注释）
   handleSelectAll();
 });
 </script>
@@ -409,19 +427,17 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  /* 如果需要，可以添加 margin-bottom 调整与下方的间距 */
   margin-bottom: 10px;
 }
 
 .button-group-inline {
   display: flex;
-  gap: 10px; /* 按钮间距 */
+  gap: 10px;
   align-items: center;
 }
 
 .custom-textarea {
   white-space: pre-wrap;
-  /* 保留原有样式 */
   width: 100%;
   min-height: 150px;
   background-color: #f5f7fa;
@@ -507,7 +523,6 @@ onMounted(async () => {
   color: #409eff;
 }
 
-/* 自定义弹出提示框样式 */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -563,9 +578,35 @@ onMounted(async () => {
 
 .button-row {
   display: flex;
-  justify-content: center; /* 居中对齐，可根据需要调整 */
+  justify-content: center;
   align-items: center;
-  gap: 10px; /* 按钮之间的间距 */
-  margin-bottom: 10px; /* 与下方内容保持间隔 */
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+/* 附加信息区域 */
+.additional-info {
+  margin-top: 40px;
+  padding: 20px;
+  border-top: 1px solid #dcdfe6;
+  font-size: 14px;
+  color: #333;
+}
+
+.additional-info h4 {
+  margin-bottom: 10px;
+}
+
+.additional-info blockquote {
+  margin: 10px 0;
+  padding-left: 20px;
+  border-left: 4px solid #409eff;
+  font-style: italic;
+  color: #666;
+}
+
+.btn-enabled {
+  background-color: green !important;
+  border-color: green !important;
 }
 </style>
