@@ -162,13 +162,13 @@
       <p class="message-item">{{ wsMessages[0] }}</p>
     </div> -->
 
-    <button
+    <!-- <button
       v-if="resultDownloadUrl"
       @click="downloadResult"
       class="download-btn"
-    >
-      Download Results
-    </button>
+    > -->
+      <!-- Download Results
+    </button> -->
 
     <TableWithAction
       :data-source="sequences"
@@ -212,7 +212,7 @@ const domain = ref<string>('')
 const sequences = ref<Sequence[]>([])
 const wsMessages = ref<string[]>([])
 const taskSubmitted = ref<boolean>(false)
-const resultDownloadUrl = ref<string | null>(null)
+// const resultDownloadUrl = ref<string | null>(null)
 
 const reverseCodonOptions = ['Ala','Arg','Asn','Asp','Cys','Gly','Trp','His','Val']
 const selectedReverseCodon = ref<string>(reverseCodonOptions[0])
@@ -223,17 +223,17 @@ const subscribeUrl = '/topic/progress/1'
 // 移除 downloadSelectedResults 函数，因为下载在子组件中处理
 // 如果该函数在其他地方使用，请保留
 
-// 下载全部结果
-function downloadResult() {
-  if (!resultDownloadUrl.value) return
-  console.log('Downloading result from:', resultDownloadUrl.value)
-  const link = document.createElement('a')
-  link.href = resultDownloadUrl.value
-  link.download = 'tREX_results.csv'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-}
+// // 下载全部结果
+// function downloadResult() {
+//   if (!resultDownloadUrl.value) return
+//   console.log('Downloading result from:', resultDownloadUrl.value)
+//   const link = document.createElement('a')
+//   link.href = resultDownloadUrl.value
+//   link.download = 'tREX_results.csv'
+//   document.body.appendChild(link)
+//   link.click()
+//   document.body.removeChild(link)
+// }
 
 let clientInstance: Client | null = null
 

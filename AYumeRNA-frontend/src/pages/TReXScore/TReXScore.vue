@@ -234,7 +234,7 @@ function downloadSelectedResults(selectedRows: Sequence[]) {
   const content = selectedRows
     .map(
       row =>
-        `Sequence: ${row.sequence}, tREX Score: ${row.trexScore ?? 'Please select Amino Acid'}`,
+        `Sequence: ${row.sequence}, tREX Score: ${row.trexScore ?? 'Waiting'}`,
     )
     .join('\n')
   const blob = new Blob([content], { type: 'text/plain' })

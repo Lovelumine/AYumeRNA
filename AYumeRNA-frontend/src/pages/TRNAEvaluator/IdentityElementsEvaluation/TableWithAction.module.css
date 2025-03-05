@@ -104,3 +104,20 @@
 .modalButton:hover {
   background-color: #66b1ff;
 }
+
+
+.collapse-button {
+  background-color: #409eff;
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+  margin-bottom: 10px;
+}
+
+.collapse-button:hover {
+  background-color: #66b1ff;
+}
