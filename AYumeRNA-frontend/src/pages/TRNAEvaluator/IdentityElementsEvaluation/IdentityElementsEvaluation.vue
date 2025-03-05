@@ -182,6 +182,13 @@
         <button class="modal-button" @click="closeModal">OK</button>
       </div>
     </div>
+<!-- 附加信息区域：Reference -->
+<div class="additional-info">
+  <h4>Reference</h4>
+  <blockquote>
+    Cervettini D, Tang S, Fried SD, Willis JCW, Funke LFH, Colwell LJ, Chin JW. Rapid discovery and evolution of orthogonal aminoacyl-tRNA synthetase-tRNA pairs. Nat Biotechnol. 2020 Aug;38(8):989-999. doi: 10.1038/s41587-020-0479-2. Epub 2020 Apr 13. PMID: 32284585; PMCID: PMC7116527.
+  </blockquote>
+</div>
   </div>
 </template>
 
@@ -687,5 +694,26 @@ onMounted(() => {
 
 .modal-button:hover {
   background-color: #66b1ff;
+}
+
+/* 附加信息区域 */
+.additional-info {
+  margin-top: 40px;
+  padding: 20px;
+  border-top: 1px solid #dcdfe6;
+  font-size: 14px;
+  color: #333;
+}
+
+.additional-info h4 {
+  margin-bottom: 10px;
+}
+
+.additional-info blockquote {
+  margin: 10px 0;
+  padding-left: 20px;
+  border-left: 4px solid #409eff;
+  font-style: italic;
+  color: #666;
 }
 </style>

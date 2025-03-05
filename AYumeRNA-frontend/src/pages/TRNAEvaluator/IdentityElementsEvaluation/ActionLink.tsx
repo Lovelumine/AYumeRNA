@@ -1,6 +1,5 @@
 import { defineComponent } from 'vue'
 import { ElButton } from 'element-plus'  // 引入 Element Plus 按钮组件
-import { useRouter } from 'vue-router'
 
 const ActionLink = defineComponent({
   name: 'ActionLink',
@@ -11,8 +10,6 @@ const ActionLink = defineComponent({
     },
   },
   setup(props) {
-    const router = useRouter()
-
     const handleClick = (event: Event) => {
       event.preventDefault()
       console.log('VisualizationAnalysis clicked for sequence:', props.sequence)
@@ -24,10 +21,8 @@ const ActionLink = defineComponent({
       )
       console.log('Sequence saved for analysis:', props.sequence)
 
-      // 跳转到 /visualization 页面
-      router.push('/visualization').then(() => {
-        console.log('Navigated to /visualization')
-      })
+      // 使用 window.open 在新页面打开 /visualization
+      window.open('/visualization', '_blank')
     }
 
     return () => (
