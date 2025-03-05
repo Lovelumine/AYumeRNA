@@ -16,16 +16,52 @@ export interface SequenceData {
 
 // 表格列配置
 export const columns: STableColumnsType<SequenceData> = [
-  { title: 'Sequence', dataIndex: 'sequence', key: 'sequence', width: 200, ellipsis: true },
-  { title: 'T-stem Sequence', dataIndex: 'tstemSequence', key: 'tstemSequence', width: 80, ellipsis: true },
-  { title: 'T-stem Position', dataIndex: 'tstemPosition', key: 'tstemPosition', width: 80, ellipsis: true },
-  { title: 'Base Pairs', dataIndex: 'basePairs', key: 'basePairs', width: 80, ellipsis: true },
-  { title: 'Free Energy (kcal/mol)', dataIndex: 'freeEnergy', key: 'freeEnergy', width: 150, ellipsis: true },
+  {
+    title: 'Sequence',
+    resizable: true,
+    dataIndex: 'sequence',
+    key: 'sequence',
+    width: 180,
+    ellipsis: true
+  },
+  {
+    title: 'T-stem Sequence',
+    resizable: true,
+    dataIndex: 'tstemSequence',
+    key: 'tstemSequence',
+    width: 140,
+    ellipsis: true
+  },
+  {
+    title: 'T-stem Position',
+    resizable: true,
+    dataIndex: 'tstemPosition',
+    key: 'tstemPosition',
+    width: 120,
+    ellipsis: true
+  },
+  {
+    title: 'Base Pairs',
+    resizable: true,
+    dataIndex: 'basePairs',
+    key: 'basePairs',
+    width: 120,
+    ellipsis: true
+  },
+  {
+    title: 'Free Energy (kcal/mol)',
+    resizable: true,
+    dataIndex: 'freeEnergy',
+    key: 'freeEnergy',
+    width: 180,
+    ellipsis: true
+  },
   {
     title: 'Total Free Energy (kcal/mol)',
+    resizable: true,
     dataIndex: 'totalFreeEnergy',
     key: 'totalFreeEnergy',
-    width: 150,
+    width: 250,
     ellipsis: true,
     filter: {
       component: ElInputNumber,  // 使用 ElInputNumber 组件
@@ -38,21 +74,27 @@ export const columns: STableColumnsType<SequenceData> = [
       },
       onFilter: (value: number | null, record: SequenceData) => {
         if (value == null) return true;  // 如果没有输入值则不过滤
-        const totalFreeEnergy = record.totalFreeEnergy
-        return Math.abs(totalFreeEnergy) < value // 筛选出绝对值小于输入值的记录
+        const totalFreeEnergy = record.totalFreeEnergy;
+        return Math.abs(totalFreeEnergy) < value; // 筛选出绝对值小于输入值的记录
       }
     },
     customRender: ({ record }: { record: SequenceData }) => {
-      // 安全检查，确保 totalFreeEnergy 是有效数字
-      if (typeof record.totalFreeEnergy === 'number' && !isNaN(record.totalFreeEnergy)) {
-        return record.totalFreeEnergy.toFixed(2)
+      // 如果 freeEnergy 为空或包含错误提示（例如 "poor"），或者 totalFreeEnergy 仍为默认值0，则显示 "N/a"
+      if (!record.freeEnergy || record.freeEnergy.includes('poor') || record.totalFreeEnergy === 0) {
+        return 'N/a';
       }
-      return 'Please select Amino Acid'
+      return record.totalFreeEnergy.toFixed(2);
     },
     sorter: (a: SequenceData, b: SequenceData) => a.totalFreeEnergy - b.totalFreeEnergy,
     sortDirections: ['ascend', 'descend'] as unknown as SortOrder[],
   },
-  { title: 'Actions', dataIndex: 'actions', key: 'actions', width: 100 }
+  {
+    title: 'Actions',
+    resizable: true,
+    dataIndex: 'actions',
+    key: 'actions',
+    width: 130
+  }
 ]
 
 // 分页配置
