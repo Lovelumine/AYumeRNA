@@ -1,12 +1,14 @@
-import { ElInputNumber } from 'element-plus'
-import { defineComponent, ref, type PropType, computed } from 'vue'
+import { defineComponent, ref, computed, type PropType, nextTick } from 'vue'
+import { defineExpose } from 'vue'
 import type { SortOrder } from '@shene/table/dist/src/types/table'
 import STable, { STableProvider } from '@shene/table'
-import ActionLink from './ActionLink'
+import { ElInputNumber } from 'element-plus'
 import en from '@shene/table/dist/locale/en'
-import styles from './TableWithAction.module.css'
 import { useRouter } from 'vue-router'
+
+import ActionLink from './ActionLink'
 import { defaultRowSelection } from './RowSelection'
+import styles from './TableWithAction.module.css'
 
 // 定义表格行数据接口
 export interface TableRow {
@@ -76,44 +78,64 @@ export default defineComponent({
   setup(props) {
     const router = useRouter()
 
+    // 用于引用 <STable> 实例
+    const tableRef = ref<unknown>(null)
+
     // 选中的行数据
     const selectedRowKeys = ref<(string | number)[]>([])
     const selectedRows = ref<TableRow[]>([])
 
-    // 计算是否有选中行
+    // 是否有选中行
     const isSelected = computed(() => selectedRows.value.length > 0)
 
     // 全选所有行
-    const handleSelectAll = () => {
+    const handleSelectAll = async () => {
       selectedRowKeys.value = props.dataSource.map(item => item.sequence)
       selectedRows.value = [...props.dataSource]
       console.log('SelectAll: selected keys:', selectedRowKeys.value)
+
+      // 等待下一次 DOM 更新后强制刷新表格的选中状态
+      await nextTick()
+      if (tableRef.value) {
+        // 如果你的 <STable> 有类似 updateSelectedRows 或 updateSelection 之类的方法，则在此调用
+        // 否则可忽略
+        // tableRef.value.updateSelectedRows(selectedRows.value)
+      }
     }
 
     // 清空所有选择
-    const handleClearSelection = () => {
+    const handleClearSelection = async () => {
       selectedRowKeys.value = []
       selectedRows.value = []
       console.log('ClearSelection: all selections cleared')
+
+      await nextTick()
+      if (tableRef.value) {
+        // tableRef.value.clearSelection()
+      }
     }
 
     // 选择 tREX Score ≥ 0.2 的行
-    const handleSelectTREXScore = () => {
+    const handleSelectTREXScore = async () => {
       const filteredRows = props.dataSource.filter(row => (row.trexScore ?? 0) >= 0.2)
       selectedRowKeys.value = filteredRows.map(row => row.sequence)
       selectedRows.value = filteredRows
       console.log('Selected rows with tREX Score ≥ 0.2:', selectedRowKeys.value)
+
+      await nextTick()
+      if (tableRef.value) {
+        // tableRef.value.updateSelectedRows(filteredRows)
+      }
     }
 
-    // 弹出提示框控制
+    // 自定义弹窗
     const showCustomModal = ref(false)
     const modalMessage = ref('')
 
-    const openModal = (message: string) => {
-      modalMessage.value = message
+    const openModal = (msg: string) => {
+      modalMessage.value = msg
       showCustomModal.value = true
     }
-
     const closeModal = () => {
       showCustomModal.value = false
     }
@@ -129,6 +151,7 @@ export default defineComponent({
         headers.join(','),
         ...selectedRows.value.map(row => `${row.sequence},"${row.trexScore ?? 'N/A'}"`),
       ].join('\n')
+
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
@@ -151,82 +174,111 @@ export default defineComponent({
       })
     }
 
-    return () => (
-      <div>
-        {/* 操作按钮区域 */}
-        <div class={styles.actionButtons}>
-          <button class={styles['collapse-button']} onClick={handleSelectAll}>
-            SelectAll
-          </button>
-          <button class={styles['collapse-button']} onClick={handleClearSelection}>
-            Clear Selection
-          </button>
-          <button class={styles['collapse-button']} onClick={handleSelectTREXScore}>
-            Select tREX Score ≥ 0.2
-          </button>
-          {/* 注意：去掉了 disabled 属性，改为通过 onClick 内部判断是否显示提示框 */}
-          <button
-            class={styles['collapse-button']}
-            onClick={downloadSelectedSequences}
-            style={{
-              backgroundColor: isSelected.value ? 'green' : '#c0c4cc',
-              borderColor: isSelected.value ? 'green' : '#c0c4cc',
-              cursor: 'pointer',
-            }}
-          >
-            Download Selected Sequences
-          </button>
-          <button
-            class={styles['collapse-button']}
-            onClick={navigateToAffinityElements}
-            style={{
-              backgroundColor: isSelected.value ? 'green' : '#c0c4cc',
-              borderColor: isSelected.value ? 'green' : '#c0c4cc',
-              cursor: 'pointer',
-            }}
-          >
-            Navigate to The affinity between aa-tRNAs and release factor
-          </button>
-        </div>
+    // 使用 defineExpose 将方法暴露给父组件
+    defineExpose({
+      handleSelectAll,
+      handleClearSelection,
+      handleSelectTREXScore,
+    })
 
-        {/* 表格区域 */}
-        <STableProvider locale={en}>
-          <STable
-            v-model:selectedRowKeys={selectedRowKeys.value}
-            columns={displayedColumns}
-            dataSource={props.dataSource}
-            row-selection={{
-              ...defaultRowSelection,
-              selectedRowKeys: selectedRowKeys.value,
-              onChange: (keys: (string | number)[], rows: TableRow[]) => {
-                console.log('onChange: keys:', keys, 'rows:', rows)
-                selectedRowKeys.value = keys
-                selectedRows.value = rows
-              },
-            }}
-            highlight-selected
-            stripe
-            size="default"
-            showSorterTooltip
-            bordered
-            hover
-            pagination={{ pageSize: 5 }}
-            rowKey="sequence"
-          />
-        </STableProvider>
+    // 返回对象，render 函数渲染组件
+    return {
+      tableRef,
+      selectedRowKeys,
+      selectedRows,
+      isSelected,
+      handleSelectAll,
+      handleClearSelection,
+      handleSelectTREXScore,
+      downloadSelectedSequences,
+      navigateToAffinityElements,
+      openModal,
+      closeModal,
+      showCustomModal,
+      modalMessage,
 
-        {/* 自定义弹出提示框 */}
-        {showCustomModal.value && (
-          <div class={styles.modalOverlay} onClick={closeModal}>
-            <div class={styles.modalContent} onClick={(e: MouseEvent) => e.stopPropagation()}>
-              <h3>Warning</h3>
-              <p>{modalMessage.value}</p>
-              <button class={styles.modalButton} onClick={closeModal}>OK</button>
-            </div>
+      render: () => (
+        <div>
+          {/* 操作按钮区域 */}
+          <div class={styles.actionButtons}>
+            <button class={styles['collapse-button']} onClick={handleSelectAll}>
+              SelectAll
+            </button>
+            <button class={styles['collapse-button']} onClick={handleClearSelection}>
+              Clear Selection
+            </button>
+            <button class={`${styles['collapse-button']} ${styles['red-button']}`} onClick={handleSelectTREXScore}>
+              Select tREX Score ≥ 0.2
+            </button>
+            <button
+              class={styles['collapse-button']}
+              onClick={downloadSelectedSequences}
+              style={{
+                backgroundColor: isSelected.value ? 'green' : '#c0c4cc',
+                borderColor: isSelected.value ? 'green' : '#c0c4cc',
+                cursor: 'pointer',
+              }}
+            >
+              Download Selected Sequences
+            </button>
+            <button
+              class={styles['collapse-button']}
+              onClick={navigateToAffinityElements}
+              style={{
+                backgroundColor: isSelected.value ? 'green' : '#c0c4cc',
+                borderColor: isSelected.value ? 'green' : '#c0c4cc',
+                cursor: 'pointer',
+              }}
+            >
+              Navigate to The affinity between aa-tRNAs and release factor
+            </button>
           </div>
-        )}
-      </div>
-    )
+
+          {/* 表格区域 */}
+          <STableProvider locale={en}>
+            <STable
+              // 绑定引用，用于在 handleSelectAll 中调用
+              ref={tableRef}
+              v-model:selectedRowKeys={selectedRowKeys.value}
+              columns={displayedColumns}
+              dataSource={props.dataSource}
+              row-selection={{
+                ...defaultRowSelection,
+                selectedRowKeys: selectedRowKeys.value,
+                onChange: (keys: (string | number)[], rows: TableRow[]) => {
+                  console.log('onChange: keys:', keys, 'rows:', rows)
+                  selectedRowKeys.value = keys
+                  selectedRows.value = rows
+                },
+              }}
+              highlight-selected
+              stripe
+              size="default"
+              showSorterTooltip
+              bordered
+              hover
+              pagination={{ pageSize: 5 }}
+              rowKey="sequence"
+            />
+          </STableProvider>
+
+          {/* 自定义弹出提示框 */}
+          {showCustomModal.value && (
+            <div class={styles.modalOverlay} onClick={closeModal}>
+              <div class={styles.modalContent} onClick={(e: MouseEvent) => e.stopPropagation()}>
+                <h3>Warning</h3>
+                <p>{modalMessage.value}</p>
+                <button class={styles.modalButton} onClick={closeModal}>OK</button>
+              </div>
+            </div>
+          )}
+        </div>
+      ),
+    }
+  },
+
+  // 渲染函数
+  render() {
+    return this.render()
   },
 })
-

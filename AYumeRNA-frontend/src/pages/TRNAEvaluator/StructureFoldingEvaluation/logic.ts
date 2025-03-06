@@ -36,7 +36,7 @@ const loadSequences = () => {
   const storedTimestamp = localStorage.getItem(TIMESTAMP_KEY)
 
   if (!storedSequences || !storedTimestamp) {
-    error.value = '本地存储中未找到序列或时间戳。'
+    error.value = 'Sequence not found in local storage'
     return
   }
 
@@ -44,7 +44,7 @@ const loadSequences = () => {
     sequences.value = JSON.parse(storedSequences) as Sequence[]
   } catch (parseError) {
     console.error('解析本地存储中的序列时出错', parseError)
-    error.value = '无法解析本地存储中的序列。'
+    error.value = 'Unable to parse sequences in local storage.'
     return
   }
 

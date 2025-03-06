@@ -171,6 +171,7 @@
     </button> -->
 
     <TableWithAction
+      ref="tableWithActionRef"
       :data-source="sequences"
     />
 
@@ -182,6 +183,7 @@
         <button class="modal-button" @click="closeModal">OK</button>
       </div>
     </div>
+
 <!-- 附加信息区域：Reference -->
 <div class="additional-info">
   <h4>Reference</h4>
@@ -194,7 +196,7 @@
 
 <script setup lang="ts">
 import TableWithAction from './TableWithAction' // 根据实际路径调整
-import { ref, onMounted } from 'vue'
+import { ref, onMounted ,nextTick} from 'vue'
 import { Client } from '@stomp/stompjs'
 import SockJS from 'sockjs-client'
 import type { Sequence, GenerationParameters } from './logic'
@@ -383,6 +385,9 @@ function onReverseCodonChange() {
   localStorage.setItem('selectedReverseCodon', selectedReverseCodon.value)
 }
 
+
+const tableWithActionRef = ref<InstanceType<typeof TableWithAction> | null>(null)
+
 onMounted(() => {
   console.log('onMounted: Loading local storage data...')
 
@@ -479,6 +484,13 @@ onMounted(() => {
       console.log('No codon scored sequences found, using default as is.')
     }
   }
+
+  nextTick(() => {
+    if (tableWithActionRef.value && tableWithActionRef.value.handleSelectAll) {
+      tableWithActionRef.value.handleSelectAll();
+    }
+  });
+
 })
 </script>
 

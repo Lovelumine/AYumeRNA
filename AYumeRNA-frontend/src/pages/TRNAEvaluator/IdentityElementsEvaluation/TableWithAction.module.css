@@ -121,3 +121,8 @@
 .collapse-button:hover {
   background-color: #66b1ff;
 }
+
+.red-button {
+  background-color: red !important;
+  border-color: red !important;
+}

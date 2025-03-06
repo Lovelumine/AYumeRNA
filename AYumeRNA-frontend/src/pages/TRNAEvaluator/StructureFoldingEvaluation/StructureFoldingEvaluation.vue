@@ -64,7 +64,7 @@
       </el-button>
       <el-button
         type="primary"
-        class="collapse-button"
+        class="collapse-button red-button"
         @click="handleSelectScore70">
         Select Infernal Score ≥ 70
       </el-button>
@@ -609,4 +609,10 @@ onMounted(async () => {
   background-color: green !important;
   border-color: green !important;
 }
+
+.red-button {
+  background-color: red !important;
+  border-color: red !important;
+}
+
 </style>

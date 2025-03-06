@@ -25,7 +25,7 @@
     <div class="action-buttons">
       <button class="action-btn" @click="handleSelectAll">Select All</button>
       <button class="action-btn" @click="handleClearSelection">Clear Selection</button>
-      <button class="action-btn" @click="handleSelectAbsoluteLessThanOne">
+      <button class="action-btn red-button" @click="handleSelectAbsoluteLessThanOne">
         Select Absolute Value &lt; 1
       </button>
       <button
@@ -479,6 +479,11 @@ onMounted(() => {
   margin-right: 10px;
   font-weight: bold;
   color: #333;
+}
+
+.red-button {
+  background-color: red !important;
+  border-color: red !important;
 }
 
 </style>
