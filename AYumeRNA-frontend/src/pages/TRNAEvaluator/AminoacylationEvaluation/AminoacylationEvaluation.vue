@@ -7,6 +7,8 @@
       A total free energy close to 0 indicates an optimal balance.
     </p>
 
+
+
     <!-- Amino Acid Selection -->
     <div class="amino-acid-selection">
       <label for="amino-acid" class="label">Select Amino Acid:</label>
@@ -270,6 +272,14 @@ onMounted(() => {
   margin-bottom: 20px;
 }
 
+
+.amino-acid-selection {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
+}
+
 .input-card {
   max-width: 700px;
   margin: 20px auto;
@@ -449,4 +459,26 @@ onMounted(() => {
   font-style: italic;
   color: #666;
 }
+
+.custom-select select {
+  padding: 8px 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.3s ease;
+  width: 300px;
+}
+
+.custom-select select:focus {
+  border-color: #409eff;
+}
+
+
+.label {
+  margin-right: 10px;
+  font-weight: bold;
+  color: #333;
+}
+
 </style>
